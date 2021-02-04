@@ -8,7 +8,7 @@ inputs:
     type: String
   - name: input_data
     description: 'The gcs path to the input dataset'
-    type: Dataset
+    type: String
   
 outputs:
   - name: output_data
@@ -26,8 +26,9 @@ implementation:
   container:
     image: __IMAGE_NAME__
     command: ["python","/component/entry_point.py"]
+   
     args: [
-      --input_data, {inputUri: input_data},
+      --input_data, {inputValue: input_data},
       --output_data, {outputUri: output_data},
       --region, {inputValue: region},
       --staging_dir, {outputUri: staging_dir},

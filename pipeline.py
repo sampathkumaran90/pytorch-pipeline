@@ -1,17 +1,43 @@
-import kfp
-from kfp.v2.components import load_component_from_file
+import argparse
+import os
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--target', type=str, choices=["kfp","mp"], required=True, help='Target platform for compilation')
+
+args = parser.parse_args()
+
+is_kfp = args.target == "kfp"
+
+if is_kfp:
+    print("Building for KFP backend")
+else:
+    print("Building for Managed Pipelines backend")
+
 #import kfp.gcp as gcp
+import kfp
 
-from kfp.v2 import dsl
-from kfp.v2 import compiler
+if is_kfp:
+    from kfp.components import load_component_from_file 
+    from kfp import dsl
+    from kfp import compiler
+else:
+    from kfp.v2.components import load_component_from_file
+    from kfp.v2 import dsl
+    from kfp.v2 import compiler
 
+# load components (note the components are not platform specific, but the importers are)
 data_prep_op = load_component_from_file("data_prep_step/component.yaml")
 train_model_op = load_component_from_file("training_step/component.yaml")
 
+# globals
+USER='pavel'
+PIPELINE_ROOT = 'gs://managed-pipeline-test-bugbash/20210130/pipeline_root/{}'.format(USER)
+
 @dsl.pipeline(
-    name = "pytorchcnn"
+    name = "pytorchcnn",
+    output_directory=PIPELINE_ROOT
 )
-def traing_imagenet_cnn_pytorch(
+def train_imagenet_cnn_pytorch(
     training_data_path = "gs://cloud-ml-nas-public/classification/imagenet/train*"
     ):
     
@@ -29,12 +55,19 @@ def traing_imagenet_cnn_pytorch(
         set_gpu_limit(1)
     )
 
-USER='pavel'
-PIPELINE_ROOT = 'gs://managed-pipeline-test-bugbash/20210130/pipeline_root/{}'.format(USER)
 
+if is_kfp:
+    compiler.Compiler().compile(
+        pipeline_func = train_imagenet_cnn_pytorch,
+        #pipeline_root = PIPELINE_ROOT, this doesn't work for some reason
+        package_path="pytorch_dpa_demo_kfp.yaml",
+    )
+else:
+    compiler.Compiler().compile(
+        pipeline_func = train_imagenet_cnn_pytorch,
+        pipeline_root = PIPELINE_ROOT,
+        output_path="pytorch_dpa_demo.json",
+    )
 
-compiler.Compiler().compile(
-    pipeline_func = traing_imagenet_cnn_pytorch,
-    pipeline_root = PIPELINE_ROOT,
-    output_path="pytorch_dpa_demo.json",
-)
+    
+

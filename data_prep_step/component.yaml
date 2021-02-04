@@ -8,7 +8,7 @@ inputs:
     type: String
   - name: input_data
     description: 'The gcs path to the input dataset'
-    type: Dataset
+    type: String
   
 outputs:
   - name: output_data
@@ -24,10 +24,11 @@ outputs:
  
 implementation:
   container:
-    image: gcr.io/managed-pipeline-test/pytorch-dpa/data_prep_step:31-01-2021-12-57-14.947505
+    image: gcr.io/managed-pipeline-test/pytorch-dpa/data_prep_step:04-02-2021-14-19-06.979858
     command: ["python","/component/entry_point.py"]
+   
     args: [
-      --input_data, {inputUri: input_data},
+      --input_data, {inputValue: input_data},
       --output_data, {outputUri: output_data},
       --region, {inputValue: region},
       --staging_dir, {outputUri: staging_dir},
