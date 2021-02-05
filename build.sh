@@ -1,5 +1,11 @@
 #gcloud auth application-default login
 
+#adding GPU to KFP cluster:
+#1) add GPU node pool:
+# gcloud container node-pools create gpunodes3 --accelerator type=nvidia-tesla-k80,count=1 --zone us-central1-a  --num-nodes 1 --machine-type n1-highmem-8
+#2) add GPU driver installer deamonset:
+# kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/container-engine-accelerators/master/nvidia-driver-installer/cos/daemonset-preloaded.yaml
+
 python3 gen_image_timestamp.py > curr_time.txt
 
 export images_tag=$(cat curr_time.txt)
