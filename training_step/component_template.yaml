@@ -17,4 +17,3 @@ implementation:
             --checkpoint_root, {outputUri: ModelCheckpoint},
             --tensorboard_root, {outputUri: TensorboardLogs}
         ]
-

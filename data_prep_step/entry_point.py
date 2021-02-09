@@ -39,6 +39,4 @@ if __name__ == '__main__':
 
     dp_package.run_pipeline_component(beam_options)
 
-    #upload_string_to_gcs("job id XXXX", args.job_id_output_path)
-
 
