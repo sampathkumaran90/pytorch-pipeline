@@ -2,19 +2,21 @@ name: train_pytorch_cnn
 description: Train PyTorch ImageNet CNN
 
 inputs:
-    - {name: TrainingData, type: Dataset, description: 'Path to the training data'}
+  - name: TrainingData
+    type: String
+    description: 'Path to the training data'
 
 outputs:
-    - {name: ModelCheckpoint, type: Model, description: "Path for the resulting model checkpoint"}
-    - {name: TensorboardLogs, type: TBlogs, description: "Path for the tensorboard logs"}
+  - name: ModelCheckpoint
+    type: String
+    description: "Path for the resulting model checkpoint"
 
 implementation:
-    container:
-        image: gcr.io/managed-pipeline-test/pytorch-dpa/training_step:04-02-2021-14-19-06.979858
-        command: ["python","/component/entry_point.py"]
-        args: [
-            --train_glob, {inputUri: TrainingData},
-            --checkpoint_root, {outputUri: ModelCheckpoint},
-            --tensorboard_root, {outputUri: TensorboardLogs}
-        ]
+  container:
+    image: jagadeeshj/training_step:15-02-2021-21-38-00.135778
+    command: ["python","/component/entry_point.py"]
 
+    args: [
+        --train_glob, {inputPath: TrainingData},
+        --checkpoint_root, {outputPath: ModelCheckpoint}
+    ]

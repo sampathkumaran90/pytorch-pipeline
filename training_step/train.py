@@ -1,76 +1,59 @@
 import logging
-      
-import torch
-from torch import nn
-import torch.nn.functional as F
-from torchvision import transforms, models
-
-import gcsfs
 import os
 from random import sample
-import pyarrow.parquet as pq
-from io import BytesIO
-from torch.utils.data import DataLoader, IterableDataset
-from torch.multiprocessing import Queue
-from PIL import Image
+
 import numpy as np
-
-from model import SimpleCNN
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import TensorBoardLogger
+import torch
+import torch.nn.functional as F
+import torchvision
+from PIL import Image
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
+from torch import nn
+from torch.multiprocessing import Queue
+from torch.utils.data import DataLoader, IterableDataset
+from torchvision import models, transforms
 
-from training_dataset import IterableParquetDataset, shuffle, process_image
+from model import CIFARCNN
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
 def train_model(
     train_glob: str,
-    checkpoint_root: str,
-    tensorboard_root: str
+    checkpoint_root: str
 ): 
   
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
           
-    fs = gcsfs.GCSFileSystem(
-        token='cloud'
-    )
-    
-    logger.log(logging.INFO, 'Creating model')
-    model = SimpleCNN()
+    train_set = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=transform)
+    val_set = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                       download=True, transform=transform)
+    classes = ('plane', 'car', 'bird', 'cat',
+           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-    logger.log(logging.INFO, 'Opening files from: '.format(train_glob))
-    dataset = pq.ParquetDataset(
-        train_glob,
-        filesystem=fs
-    )
-    
-    logger.log(logging.INFO, 'Creating dataset')
-    train_dataset = IterableParquetDataset(
-        dataset,
-        32,
-        process_func=process_image,
-        columns=[
-        'image/class/label', # TODO: should these be hard-coded...?
-        'image/encoded'
-        ]
-    )
+    logger.log(logging.INFO, 'Creating model')
+    model = CIFARCNN()
 
     logger.log(logging.INFO, 'Creating data loader')
-    dataloader = DataLoader(
-        train_dataset
-    ) 
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size =32, shuffle=True)
         
-    #tboard = TensorBoardLogger(tensorboard_root)
     checkpoint_callback = ModelCheckpoint(
         filepath=os.path.join(checkpoint_root, 'weights.ckpt')
     )
 
     logger.log(logging.INFO, 'Starting training')
     trainer = pl.Trainer(
-    #logger=tboard,
     checkpoint_callback=checkpoint_callback,
     max_epochs=1)
 
-    trainer.fit(model, dataloader)
+    trainer.fit(model, train_loader)
 
     return checkpoint_callback.best_model_path
+  

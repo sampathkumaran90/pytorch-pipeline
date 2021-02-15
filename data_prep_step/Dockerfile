@@ -1,14 +1,14 @@
 FROM gcr.io/ml-pipeline/ml-pipeline-gcp:1.3.0
 
-RUN pip install tensorflow==2.3.*
+RUN pip install torch torchvision image pandas
 
 COPY *.py /component/
-COPY data_prep_beam/*.py /component/data_prep_beam/
+COPY data_prep/*.py /component/data_prep/
 
 WORKDIR /component
 
 ENTRYPOINT /bin/bash
 
-#RUN pip install apache-beam[gcp]==2.27.*
+#RUN pip install apache-test[gcp]==2.27.*
 
 

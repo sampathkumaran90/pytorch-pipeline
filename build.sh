@@ -15,7 +15,7 @@ for COMPONENT in training_step data_prep_step
 do
     cd ./$COMPONENT
 
-    full_image_name=gcr.io/managed-pipeline-test/pytorch-dpa/$COMPONENT:$images_tag
+    full_image_name=jagadeeshj/$COMPONENT:$images_tag
 
     echo IMAGE TO BUILD: $full_image_name
 
