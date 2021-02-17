@@ -18,15 +18,14 @@ else:
 import kfp
 
 if is_kfp:
-    from kfp.components import load_component_from_file 
+    from kfp.components import load_component_from_file, load_component_from_url
     from kfp import dsl
     from kfp import compiler
 else:
-    from kfp.v2.components import load_component_from_file
+    from kfp.v2.components import load_component_from_file, load_component_from_url
     from kfp.v2 import dsl
     from kfp.v2 import compiler
 
-# load components (note the components are not platform specific, but the importers are)
 data_prep_op = load_component_from_file(f"data_prep_step/{args.model}/component.yaml")
 train_model_op = load_component_from_file(f"training_step/{args.model}/component.yaml")
 # deploy_model_op = load_component_from_file("kfserving/component.yaml")
@@ -50,6 +49,7 @@ def train_imagenet_cnn_pytorch(
     #     set_cpu_limit('4').
     #     set_memory_limit('14Gi')
     # )
+
     train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"], maxepochs = 2, 
         numsamples = 150, 
         batchsize = 16,

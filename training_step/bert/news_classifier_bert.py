@@ -113,6 +113,13 @@ class BertDataModule(pl.LightningDataModule):
         num_samples = self.args["num_samples"]
 
         data_path = self.args['train_glob']
+
+        print("\n\nDATA PATH")
+        print(self.args['train_glob'])
+        print("\n\n")
+
+        #data_path = "/tmp/outputs/output_data/data"
+
         df = pd.read_csv(os.path.join(data_path, 'ag_news_csv/train.csv'))
 
         df.columns = ["label", "title", "description"]
@@ -122,7 +129,7 @@ class BertDataModule(pl.LightningDataModule):
         df["label"] = df.label.apply(self.process_label)
 
         self.tokenizer = BertTokenizer(os.path.join(
-            data_path, 'bert_base_uncased_vocab.txt'))
+            data_path, 'bert-base-uncased-vocab.txt'))
 
         RANDOM_SEED = 42
         np.random.seed(RANDOM_SEED)

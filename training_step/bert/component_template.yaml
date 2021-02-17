@@ -2,7 +2,7 @@ name: train_pytorch_cnn
 description: Train PyTorch ImageNet CNN
 
 inputs:
-    - {name: TrainingData, type: String, description: 'Path to the training data'}
+    - {name: TrainingData, type: Directory, description: 'Path to the training data'}
     - {name: MaxEpochs, type: Integer, description: 'Path to the training data'}
     - {name: NumSamples, type: Integer, description: 'Path to the training data'}
     - {name: BatchSize, type: Integer, description: 'Path to the training data'}

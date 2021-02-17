@@ -1,0 +1,131 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pytorchcnn-
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0, pipelines.kubeflow.org/pipeline_compilation_time: '2021-02-17T17:58:35.002380',
+    pipelines.kubeflow.org/pipeline_spec: '{"name": "pytorchcnn"}'}
+  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0}
+spec:
+  entrypoint: pytorchcnn
+  templates:
+  - name: list-items
+    container:
+      args: []
+      command:
+      - sh
+      - -ex
+      - -c
+      - |
+        mkdir -p "$(dirname "$1")"
+        #ls --almost-all --recursive "$0" > "$1"
+        ls -A -R "$0" > "$1"
+      - /tmp/inputs/Directory/data
+      - /tmp/outputs/Items/data
+      image: alpine
+    inputs:
+      artifacts:
+      - {name: preprocessimagedata-output_data, path: /tmp/inputs/Directory/data}
+    outputs:
+      artifacts:
+      - {name: list-items-Items, path: /tmp/outputs/Items/data}
+    metadata:
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Recursively
+          list directory contents.", "implementation": {"container": {"command": ["sh",
+          "-ex", "-c", "mkdir -p \"$(dirname \"$1\")\"\n#ls --almost-all --recursive
+          \"$0\" > \"$1\"\nls -A -R \"$0\" > \"$1\"\n", {"inputPath": "Directory"},
+          {"outputPath": "Items"}], "image": "alpine"}}, "inputs": [{"name": "Directory",
+          "type": "Directory"}], "name": "List items", "outputs": [{"name": "Items"}]}',
+        pipelines.kubeflow.org/component_ref: '{"digest": "af5dcd84d4028552509ab5f542129d6dfd19339bd1e87918cab72b36efd0860b",
+          "url": "https://raw.githubusercontent.com/kubeflow/pipelines/master/components/filesystem/list_items/component.yaml"}'}
+  - name: preprocessimagedata
+    container:
+      args: [--input_data, /tmp/inputs/input_data/data, --vocab_file, bert_base_uncased_vocab.txt,
+        --vocab_file_url, 'https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt',
+        --output_data, /tmp/outputs/output_data/data]
+      command: [python, /component/entry_point.py]
+      image: jagadeeshj/data_prep_step:17-02-2021-17-58-02.649580
+    inputs:
+      artifacts:
+      - name: input_data
+        path: /tmp/inputs/input_data/data
+        raw: {data: 'gs://cloud-ml-nas-public/classification/imagenet/train*'}
+    outputs:
+      artifacts:
+      - {name: preprocessimagedata-output_data, path: /tmp/outputs/output_data/data}
+    metadata:
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Prepare
+          data for PyTorch training.\n", "implementation": {"container": {"args":
+          ["--input_data", {"inputPath": "input_data"}, "--vocab_file", {"inputValue":
+          "vocab_file"}, "--vocab_file_url", {"inputValue": "vocab_file_url"}, "--output_data",
+          {"outputPath": "output_data"}], "command": ["python", "/component/entry_point.py"],
+          "image": "jagadeeshj/data_prep_step:17-02-2021-17-58-02.649580"}}, "inputs":
+          [{"description": "The path to the input dataset", "name": "input_data",
+          "type": "String"}, {"description": "The path to the input vocab file", "name":
+          "vocab_file", "type": "String"}, {"description": "The path to the input
+          vocab file", "name": "vocab_file_url", "type": "String"}], "name": "PreProcessImageData",
+          "outputs": [{"description": "Output data location", "name": "output_data",
+          "type": "Directory"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
+          "045238e80276fd8065b7eeb8dd8befce639336b52f20ce7bb7f85319582caca7", "url":
+          "data_prep_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"vocab_file":
+          "bert_base_uncased_vocab.txt", "vocab_file_url": "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt"}'}
+  - name: pytorchcnn
+    dag:
+      tasks:
+      - name: list-items
+        template: list-items
+        dependencies: [preprocessimagedata]
+        arguments:
+          artifacts:
+          - {name: preprocessimagedata-output_data, from: '{{tasks.preprocessimagedata.outputs.artifacts.preprocessimagedata-output_data}}'}
+      - {name: preprocessimagedata, template: preprocessimagedata}
+      - name: train-pytorch-cnn
+        template: train-pytorch-cnn
+        dependencies: [preprocessimagedata]
+        arguments:
+          artifacts:
+          - {name: preprocessimagedata-output_data, from: '{{tasks.preprocessimagedata.outputs.artifacts.preprocessimagedata-output_data}}'}
+  - name: train-pytorch-cnn
+    container:
+      args: [--train_glob, /tmp/inputs/TrainingData/data, --model_save_path, /tmp/outputs/ModelCheckpoint/data,
+        --tensorboard_root, /tmp/outputs/TensorboardLogs/data, --max_epochs, '2',
+        --num_samples, '150', --batch_size, '16', --num_workers, '2', --learning_rate,
+        '0.001', --accelerator, '']
+      command: [python, /component/entry_point.py]
+      image: jagadeeshj/training_step:17-02-2021-17-58-02.649580
+      resources:
+        limits: {cpu: '4', memory: 14Gi}
+    inputs:
+      artifacts:
+      - {name: preprocessimagedata-output_data, path: /tmp/inputs/TrainingData/data}
+    outputs:
+      artifacts:
+      - {name: train-pytorch-cnn-ModelCheckpoint, path: /tmp/outputs/ModelCheckpoint/data}
+      - {name: train-pytorch-cnn-TensorboardLogs, path: /tmp/outputs/TensorboardLogs/data}
+    metadata:
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Train
+          PyTorch ImageNet CNN", "implementation": {"container": {"args": ["--train_glob",
+          {"inputPath": "TrainingData"}, "--model_save_path", {"outputPath": "ModelCheckpoint"},
+          "--tensorboard_root", {"outputPath": "TensorboardLogs"}, "--max_epochs",
+          {"inputValue": "MaxEpochs"}, "--num_samples", {"inputValue": "NumSamples"},
+          "--batch_size", {"inputValue": "BatchSize"}, "--num_workers", {"inputValue":
+          "NumWorkers"}, "--learning_rate", {"inputValue": "LearningRate"}, "--accelerator",
+          {"inputValue": "Accelerator"}], "command": ["python", "/component/entry_point.py"],
+          "image": "jagadeeshj/training_step:17-02-2021-17-58-02.649580"}}, "inputs":
+          [{"description": "Path to the training data", "name": "TrainingData", "type":
+          "Directory"}, {"description": "Path to the training data", "name": "MaxEpochs",
+          "type": "Integer"}, {"description": "Path to the training data", "name":
+          "NumSamples", "type": "Integer"}, {"description": "Path to the training
+          data", "name": "BatchSize", "type": "Integer"}, {"description": "Path to
+          the training data", "name": "NumWorkers", "type": "Integer"}, {"description":
+          "Path to the training data", "name": "LearningRate", "type": "Float"}, {"description":
+          "Path to the training data", "name": "Accelerator", "type": "String"}],
+          "name": "train_pytorch_cnn", "outputs": [{"description": "Path for the resulting
+          model checkpoint", "name": "ModelCheckpoint", "type": "String"}, {"description":
+          "Path for the tensorboard logs", "name": "TensorboardLogs", "type": "TBlogs"}]}',
+        pipelines.kubeflow.org/component_ref: '{"digest": "008767514cb8205f4704365baf5898fbbd47ba52f28d3a067b646de5a7d73659",
+          "url": "training_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"Accelerator":
+          "", "BatchSize": "16", "LearningRate": "0.001", "MaxEpochs": "2", "NumSamples":
+          "150", "NumWorkers": "2"}'}
+  arguments:
+    parameters: []
+  serviceAccountName: pipeline-runner
