@@ -21,6 +21,7 @@ parser.add_argument('--learning_rate', type=float, default=0.001,
 parser.add_argument('--accelerator', type=str, default="None", help="Acceleration")
 parser.add_argument('--model_save_path', type=str, help="Model save directory")
 
+args = parser.parse_args()
 
 train_model(train_glob=args.train_glob, 
             tensorboard_root=args.tensorboard_root,
