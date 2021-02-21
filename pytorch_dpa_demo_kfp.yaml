@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: pytorchcnn-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0, pipelines.kubeflow.org/pipeline_compilation_time: '2021-02-17T17:58:35.002380',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0, pipelines.kubeflow.org/pipeline_compilation_time: '2021-02-19T19:18:51.067446',
     pipelines.kubeflow.org/pipeline_spec: '{"name": "pytorchcnn"}'}
   labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0}
 spec:
@@ -24,7 +24,7 @@ spec:
       image: alpine
     inputs:
       artifacts:
-      - {name: preprocessimagedata-output_data, path: /tmp/inputs/Directory/data}
+      - {name: train-pytorch-cnn-ModelCheckpoint, path: /tmp/inputs/Directory/data}
     outputs:
       artifacts:
       - {name: list-items-Items, path: /tmp/outputs/Items/data}
@@ -43,7 +43,7 @@ spec:
         --vocab_file_url, 'https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt',
         --output_data, /tmp/outputs/output_data/data]
       command: [python, /component/entry_point.py]
-      image: jagadeeshj/data_prep_step:17-02-2021-17-58-02.649580
+      image: jagadeeshj/data_prep_step:19-02-2021-19-17-59.892404
     inputs:
       artifacts:
       - name: input_data
@@ -58,14 +58,14 @@ spec:
           ["--input_data", {"inputPath": "input_data"}, "--vocab_file", {"inputValue":
           "vocab_file"}, "--vocab_file_url", {"inputValue": "vocab_file_url"}, "--output_data",
           {"outputPath": "output_data"}], "command": ["python", "/component/entry_point.py"],
-          "image": "jagadeeshj/data_prep_step:17-02-2021-17-58-02.649580"}}, "inputs":
+          "image": "jagadeeshj/data_prep_step:19-02-2021-19-17-59.892404"}}, "inputs":
           [{"description": "The path to the input dataset", "name": "input_data",
           "type": "String"}, {"description": "The path to the input vocab file", "name":
           "vocab_file", "type": "String"}, {"description": "The path to the input
           vocab file", "name": "vocab_file_url", "type": "String"}], "name": "PreProcessImageData",
           "outputs": [{"description": "Output data location", "name": "output_data",
-          "type": "Directory"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
-          "045238e80276fd8065b7eeb8dd8befce639336b52f20ce7bb7f85319582caca7", "url":
+          "type": "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
+          "fbc55892d87f96a5b9aa167a5553e5be51081feda9b11c5108f511c64b87b9da", "url":
           "data_prep_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"vocab_file":
           "bert_base_uncased_vocab.txt", "vocab_file_url": "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt"}'}
   - name: pytorchcnn
@@ -73,10 +73,10 @@ spec:
       tasks:
       - name: list-items
         template: list-items
-        dependencies: [preprocessimagedata]
+        dependencies: [train-pytorch-cnn]
         arguments:
           artifacts:
-          - {name: preprocessimagedata-output_data, from: '{{tasks.preprocessimagedata.outputs.artifacts.preprocessimagedata-output_data}}'}
+          - {name: train-pytorch-cnn-ModelCheckpoint, from: '{{tasks.train-pytorch-cnn.outputs.artifacts.train-pytorch-cnn-ModelCheckpoint}}'}
       - {name: preprocessimagedata, template: preprocessimagedata}
       - name: train-pytorch-cnn
         template: train-pytorch-cnn
@@ -91,7 +91,7 @@ spec:
         --num_samples, '150', --batch_size, '16', --num_workers, '2', --learning_rate,
         '0.001', --accelerator, '']
       command: [python, /component/entry_point.py]
-      image: jagadeeshj/training_step:17-02-2021-17-58-02.649580
+      image: jagadeeshj/training_step:19-02-2021-19-17-59.892404
       resources:
         limits: {cpu: '4', memory: 14Gi}
     inputs:
@@ -110,9 +110,9 @@ spec:
           "--batch_size", {"inputValue": "BatchSize"}, "--num_workers", {"inputValue":
           "NumWorkers"}, "--learning_rate", {"inputValue": "LearningRate"}, "--accelerator",
           {"inputValue": "Accelerator"}], "command": ["python", "/component/entry_point.py"],
-          "image": "jagadeeshj/training_step:17-02-2021-17-58-02.649580"}}, "inputs":
+          "image": "jagadeeshj/training_step:19-02-2021-19-17-59.892404"}}, "inputs":
           [{"description": "Path to the training data", "name": "TrainingData", "type":
-          "Directory"}, {"description": "Path to the training data", "name": "MaxEpochs",
+          "String"}, {"description": "Path to the training data", "name": "MaxEpochs",
           "type": "Integer"}, {"description": "Path to the training data", "name":
           "NumSamples", "type": "Integer"}, {"description": "Path to the training
           data", "name": "BatchSize", "type": "Integer"}, {"description": "Path to
@@ -120,9 +120,9 @@ spec:
           "Path to the training data", "name": "LearningRate", "type": "Float"}, {"description":
           "Path to the training data", "name": "Accelerator", "type": "String"}],
           "name": "train_pytorch_cnn", "outputs": [{"description": "Path for the resulting
-          model checkpoint", "name": "ModelCheckpoint", "type": "String"}, {"description":
+          model checkpoint", "name": "ModelCheckpoint", "type": "Directory"}, {"description":
           "Path for the tensorboard logs", "name": "TensorboardLogs", "type": "TBlogs"}]}',
-        pipelines.kubeflow.org/component_ref: '{"digest": "008767514cb8205f4704365baf5898fbbd47ba52f28d3a067b646de5a7d73659",
+        pipelines.kubeflow.org/component_ref: '{"digest": "3aa76f2359c689c60b2e4df40e066998f3b6cdc1eed54817464ba93ca0c60f29",
           "url": "training_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"Accelerator":
           "", "BatchSize": "16", "LearningRate": "0.001", "MaxEpochs": "2", "NumSamples":
           "150", "NumWorkers": "2"}'}
