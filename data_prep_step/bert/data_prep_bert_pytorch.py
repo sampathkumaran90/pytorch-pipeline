@@ -40,7 +40,7 @@ def run_pipeline(input_options):
     """
     
     dataset_tar = download_from_url(
-        "https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz", root="./")
+        input_options["dataset_url"], root="./")
     extracted_files = extract_archive(dataset_tar)
 
     ag_news_csv = pv.read_csv("ag_news_csv/train.csv")
@@ -71,11 +71,3 @@ def run_pipeline_component(options):
     run_pipeline(
         options
     )
-
-
-# if __name__ == "__main__":
-#     run_pipeline_component({
-#         "output": "data/test",
-#         "VOCAB_FILE": "bert_base_uncased_vocab.txt",
-#         "VOCAB_FILE_URL": "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt"
-#     })

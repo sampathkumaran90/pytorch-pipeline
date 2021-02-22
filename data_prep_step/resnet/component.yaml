@@ -14,7 +14,7 @@ outputs:
  
 implementation:
   container:
-    image: jagadeeshj/data_prep_step:15-02-2021-21-38-00.135778
+    image: jagadeeshj/data_prep_step:22-02-2021-12-23-59.762171
     command: ["python","/component/entry_point.py"]
 
     args: [

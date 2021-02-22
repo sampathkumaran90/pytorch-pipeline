@@ -1,4 +1,4 @@
-FROM gcr.io/deeplearning-platform-release/pytorch-cpu:latest
+FROM gcr.io/deeplearning-platform-release/pytorch-gpu:latest
 
 RUN pip install pytorch-lightning webdataset
 

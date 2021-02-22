@@ -241,6 +241,10 @@ def train_model(
 
     if accelerator == "None":
         accelerator = None
+    if train_batch_size == "None":
+        train_batch_size = None
+    if val_batch_size == "None":
+        val_batch_size = None
 
     dict_args = {
         "train_glob": train_glob,
@@ -313,18 +317,3 @@ def train_model(
 
     return checkpoint_callback.best_model_path
 
-
-# if __name__ == "__main__":
-#     train_model(
-#         "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/data_prep_step/resnet/test/webdataset",
-#         model_save_path= "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/checkpoint",
-#         tensorboard_root= "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/tboard",
-#         max_epochs= 1,
-#         gpus = 1,
-#         train_batch_size= None,
-#         val_batch_size= None,
-#         train_num_workers= 4,
-#         val_num_workers= 4,
-#         learning_rate= 0.001,
-#         accelerator= "None"
-#     )

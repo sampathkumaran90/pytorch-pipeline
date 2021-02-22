@@ -1,5 +1,5 @@
-name: train_pytorch_cnn
-description: Train PyTorch ImageNet CNN
+name: train_pytorch_bert
+description: Train PyTorch Bert
 
 inputs:
     - {name: TrainingData, type: String, description: 'Path to the training data'}

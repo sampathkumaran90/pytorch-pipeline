@@ -374,8 +374,3 @@ def train_model(
     trainer.fit(model, dm)
     trainer.test()
 
-
-
-# if __name__ == "__main__":
-#     train_model("/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/data_prep_step/bert/data/test", os.getcwd(),
-#                 2, 150, 16, 3, 0.001, None, os.getcwd())
