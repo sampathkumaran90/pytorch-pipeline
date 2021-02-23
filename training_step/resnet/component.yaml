@@ -1,0 +1,22 @@
+name: train_pytorch_cnn
+description: Train PyTorch ImageNet CNN
+
+inputs:
+  - name: TrainingData
+    type: String
+    description: 'Path to the training data'
+
+outputs:
+  - name: ModelCheckpoint
+    type: String
+    description: "Path for the resulting model checkpoint"
+
+implementation:
+  container:
+    image: jagadeeshj/training_step:15-02-2021-21-38-00.135778
+    command: ["python","/component/entry_point.py"]
+
+    args: [
+        --train_glob, {inputPath: TrainingData},
+        --checkpoint_root, {outputPath: ModelCheckpoint}
+    ]

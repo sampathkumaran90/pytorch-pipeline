@@ -2,6 +2,7 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--model', type=str, choices=["resnet","bert"], required=True, help='Target model for compilation')
 parser.add_argument('--target', type=str, choices=["kfp","mp"], required=True, help='Target platform for compilation')
 
 args = parser.parse_args()
@@ -26,9 +27,11 @@ else:
     from kfp.v2 import compiler
 
 # load components (note the components are not platform specific, but the importers are)
-data_prep_op = load_component_from_file("data_prep_step/component.yaml")
-train_model_op = load_component_from_file("training_step/component.yaml")
-deploy_model_op = load_component_from_file("deploy_model/component.yaml")
+data_prep_op = load_component_from_file(f"data_prep_step/{args.model}/component.yaml")
+train_model_op = load_component_from_file(f"training_step/{args.model}/component.yaml")
+
+model_archive_op = load_component_from_file("model_archive_step/component.yaml")
+# deploy_model_op = load_component_from_file("kfserving/component.yaml")
 
 # globals
 USER='pavel'
@@ -36,27 +39,44 @@ PIPELINE_ROOT = 'gs://managed-pipeline-test-bugbash/20210130/pipeline_root/{}'.f
 
 @dsl.pipeline(
     name = "pytorchcnn",
-    output_directory=PIPELINE_ROOT
+    output_directory = PIPELINE_ROOT
 )
 def train_imagenet_cnn_pytorch(
-    training_data_path = "gs://cloud-ml-nas-public/classification/imagenet/train*"
     ):
-    
-    data_prep_task = data_prep_op(region = 'us-central1', input_data = training_data_path)
+        
+    # data_prep_task = data_prep_op(input_data = "gs://cloud-ml-nas-public/classification/imagenet/train*")
+    # data_prep_task = data_prep_op(input_data = "gs://cloud-ml-nas-public/classification/imagenet/train*", vocab_file = "bert_base_uncased_vocab.txt", vocab_file_url = "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt")
 
     #temp_input = "gs://managed-pipeline-test-bugbash/20210130/pipeline_root/pavel/c14ec128-18d4-4980-b9f3-e1c6f4babb51/pytorchcnn-dj5sg-2878573190/output_data/prefix"
     #data_prep_task.outputs["output_data"])
 
-    train_model_task = (train_model_op(trainingdata=data_prep_task.outputs["output_data"]).
-        set_cpu_limit('4').
-        set_memory_limit('14Gi').
-        add_node_selector_constraint(
-            'cloud.google.com/gke-accelerator',
-            'nvidia-tesla-k80').
-        set_gpu_limit(1)
-    )
+    # train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"]).
+    #     set_cpu_limit('4').
+    #     set_memory_limit('14Gi')
+    # )
+    # train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"], maxepochs = 2, 
+    #     numsamples = 150, 
+    #     batchsize = 16,
+    #     numworkers = 2,
+    #     learningrate = 0.001,
+    #     accelerator = "")
+    #     .set_cpu_limit('4').
+    #     set_memory_limit('14Gi')
+    # )
 
-    deploy_model_task = deploy_model_op(modelcheckpoint = train_model_task.outputs["ModelCheckpoint"])
+    model_archive_task = model_archive_op(model_directory = "/tmp/models/")
+
+    # deploy_model_task = deploy_model_op(
+	# 	action = 'create',
+	# 	model_name='pytorch',
+	# 	default_model_uri='gs://kfserving-samples/models/pytorch/cifar10/',
+	# 	namespace='admin',
+	# 	framework='pytorch',
+	# 	default_custom_model_spec='{}',
+	# 	canary_custom_model_spec='{}',
+	# 	autoscaling_target='0',
+	# 	kfserving_endpoint=''
+	# )
 
 
 if is_kfp:

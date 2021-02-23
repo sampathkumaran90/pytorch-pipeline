@@ -1,0 +1,32 @@
+name: PreProcessImageData
+description: |
+  Prepare data for PyTorch training.
+
+inputs:
+  - name: input_data
+    description: 'The path to the input dataset'
+    type: String
+  - name: vocab_file
+    description: 'The path to the input vocab file'
+    type: String
+  - name: vocab_file_url
+    description: 'The path to the input vocab file'
+    type: String
+  
+outputs:
+  - name: output_data
+    description: 'Output data location'
+    type: String
+ 
+implementation:
+  container:
+    image: __IMAGE_NAME__
+    command: ["python","/component/entry_point.py"]
+   
+    args: [
+      --input_data, {inputPath: input_data},
+      --vocab_file, {inputPath: vocab_file},
+      --vocab_file_url, {inputPath: vocab_file_url},
+      --output_data, {outputPath: output_data}
+    ]
+   

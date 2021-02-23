@@ -1,0 +1,23 @@
+name: PreProcessImageData
+description: |
+  Prepare data for PyTorch training.
+
+inputs:
+  - name: input_data
+    description: 'The gcs path to the input dataset'
+    type: Dataset
+  
+outputs:
+  - name: output_data
+    description: 'Output data GCS location'
+    type: String
+ 
+implementation:
+  container:
+    image: jagadeeshj/data_prep_step:15-02-2021-21-38-00.135778
+    command: ["python","/component/entry_point.py"]
+
+    args: [
+      --input_data, {inputValue: input_data},
+      --output_data, {outputPath: output_data},
+    ]

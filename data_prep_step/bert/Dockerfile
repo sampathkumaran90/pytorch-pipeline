@@ -1,9 +1,9 @@
 FROM gcr.io/ml-pipeline/ml-pipeline-gcp:1.3.0
 
-RUN pip install tensorflow==2.3.*
+RUN pip install torch torchvision image pandas sklearn transformers torchtext
 
 COPY *.py /component/
-COPY data_prep_beam/*.py /component/data_prep_beam/
+# COPY data_prep/*.py /component/data_prep/
 
 WORKDIR /component
 
