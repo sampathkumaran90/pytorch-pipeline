@@ -8,3 +8,5 @@ tqdm
 torchtext
 pandas
 tensorboard
+s3fs
+tensorboardX

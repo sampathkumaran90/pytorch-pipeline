@@ -11,6 +11,8 @@ inputs:
   - {name: LearningRate, type: Float, description: 'Learning rate'}
   - {name: Gpus, type: Integer, description: 'Number of gpus'}
   - {name: Accelerator, type: String, description: 'Accelerator for multi gpu setting'}
+  - {name: BucketName, type: String, description: 'S3 bucket name'}
+  - {name: FolderName, type: String, description: 'S3 folder'}
 
 outputs:
   - name: ModelCheckpoint
@@ -19,6 +21,7 @@ outputs:
   - name: TensorboardRoot
     type: String
     description: "Path for the tensorboard logs"
+  - {name: TensorboardS3Path, type: String, description: "Tensorboard S3 Path"}
 
 implementation:
   container:
@@ -37,4 +40,8 @@ implementation:
         --val_num_workers, {inputValue: ValNumWorkers},
         --learning_rate, {inputValue: LearningRate},
         --accelerator, {inputValue: Accelerator},
+        --bucket_name, {inputValue: BucketName},
+        --folder_name, {inputValue: FolderName}
     ]
+    fileOutputs: 
+      TensorboardS3Path: /logdir.txt

@@ -32,6 +32,8 @@ parser.add_argument("--learning_rate", default=0.001, type=float, help="Learning
 parser.add_argument(
     "--accelerator", default=None, type=str, help="Accelerator for multi-gpu training"
 )
+parser.add_argument('--bucket_name', type=str, help="Bucket name")
+parser.add_argument('--folder_name', type=str, help="S3 bucket folder")
 
 
 args = parser.parse_args()
@@ -50,4 +52,6 @@ train_model(
     val_num_workers=args.val_num_workers,
     learning_rate=args.learning_rate,
     accelerator=args.accelerator,
+    bucket_name=args.bucket_name,
+    folder_name=args.folder_name
 )

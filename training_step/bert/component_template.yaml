@@ -3,16 +3,19 @@ description: Train PyTorch Bert
 
 inputs:
     - {name: TrainingData, type: String, description: 'Path to the training data'}
-    - {name: MaxEpochs, type: Integer, description: 'Path to the training data'}
-    - {name: NumSamples, type: Integer, description: 'Path to the training data'}
-    - {name: BatchSize, type: Integer, description: 'Path to the training data'}
-    - {name: NumWorkers, type: Integer, description: 'Path to the training data'}
-    - {name: LearningRate, type: Float, description: 'Path to the training data'}
-    - {name: Accelerator, type: String, description: 'Path to the training data'}
+    - {name: MaxEpochs, type: Integer, description: 'Maximum number of epochs'}
+    - {name: NumSamples, type: Integer, description: 'Maximum number of samples'}
+    - {name: BatchSize, type: Integer, description: 'Batch size'}
+    - {name: NumWorkers, type: Integer, description: 'Number of workers'}
+    - {name: LearningRate, type: Float, description: 'Learning rate'}
+    - {name: Accelerator, type: String, description: 'multi gpu training'}
+    - {name: BucketName, type: String, description: 'S3 bucket name'}
+    - {name: FolderName, type: String, description: 'S3 folder'}
 
 outputs:
     - {name: ModelCheckpoint, type: Directory, description: "Path for the resulting model checkpoint"}
-    - {name: TensorboardLogs, type: TBlogs, description: "Path for the tensorboard logs"}
+    - {name: TensorboardLogs, type: String, description: "Path for the tensorboard logs"}
+    - {name: TensorboardS3Path, type: String, description: "Tensorboard S3 Path"}
 
 implementation:
     container:
@@ -27,5 +30,9 @@ implementation:
             --batch_size, {inputValue: BatchSize},
             --num_workers, {inputValue: NumWorkers},
             --learning_rate, {inputValue: LearningRate},
-            --accelerator, {inputValue: Accelerator}
+            --accelerator, {inputValue: Accelerator},
+            --bucket_name, {inputValue: BucketName},
+            --folder_name, {inputValue: FolderName}
         ]
+        fileOutputs: 
+            TensorboardS3Path: /logdir.txt

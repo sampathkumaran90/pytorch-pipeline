@@ -9,9 +9,13 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from pytorch_lightning.callbacks import (EarlyStopping, LearningRateMonitor,
-                                         ModelCheckpoint)
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
 from pytorch_lightning.metrics import Accuracy
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
@@ -21,6 +25,9 @@ from transformers import AdamW, BertModel, BertTokenizer
 from pytorch_lightning.loggers import TensorBoardLogger
 import pyarrow.parquet as pq
 from pathlib import Path
+import boto3
+from botocore.exceptions import ClientError
+import shutil
 
 
 class NewsDataset(Dataset):
@@ -113,18 +120,19 @@ class BertDataModule(pl.LightningDataModule):
 
         num_samples = self.args["num_samples"]
 
-        data_path = self.args['train_glob']
+        data_path = self.args["train_glob"]
 
-    
-        df_parquet = pq.ParquetDataset(
-            self.args['train_glob']
-        )
+        print("\n\nTRAIN GLOB")
+        print(data_path)
+        print("\n\n")
+
+        df_parquet = pq.ParquetDataset(self.args["train_glob"])
 
         df = df_parquet.read_pandas().to_pandas()
 
         df.columns = ["label", "title", "description"]
         df.sample(frac=1)
-        df = df.iloc[: num_samples]
+        df = df.iloc[:num_samples]
 
         df["label"] = df.label.apply(self.process_label)
 
@@ -138,7 +146,10 @@ class BertDataModule(pl.LightningDataModule):
             df, test_size=0.1, random_state=RANDOM_SEED, stratify=df["label"]
         )
         self.df_val, self.df_test = train_test_split(
-            self.df_test, test_size=0.5, random_state=RANDOM_SEED, stratify=self.df_test["label"]
+            self.df_test,
+            test_size=0.5,
+            random_state=RANDOM_SEED,
+            stratify=self.df_test["label"],
         )
 
     def create_data_loader(self, df, tokenizer, max_len, batch_size):
@@ -198,8 +209,7 @@ class BertNewsClassifier(pl.LightningModule):
         """
         super(BertNewsClassifier, self).__init__()
         self.PRE_TRAINED_MODEL_NAME = "bert-base-uncased"
-        self.bert_model = BertModel.from_pretrained(
-            self.PRE_TRAINED_MODEL_NAME)
+        self.bert_model = BertModel.from_pretrained(self.PRE_TRAINED_MODEL_NAME)
         for param in self.bert_model.parameters():
             param.requires_grad = False
         self.drop = nn.Dropout(p=0.2)
@@ -225,8 +235,7 @@ class BertNewsClassifier(pl.LightningModule):
 
         :return: output - Type of news for the given news snippet
         """
-        output = self.bert_model(
-            input_ids=input_ids, attention_mask=attention_mask)
+        output = self.bert_model(input_ids=input_ids, attention_mask=attention_mask)
         output = F.relu(self.fc1(output.pooler_output))
         output = self.drop(output)
         output = self.out(output)
@@ -249,7 +258,7 @@ class BertNewsClassifier(pl.LightningModule):
         self.train_acc(output, targets)
         self.log("train_acc", self.train_acc.compute())
         self.log("train_loss", loss)
-        return {"loss": loss}
+        return {"loss": loss, "acc": self.train_acc.compute()}
 
     def test_step(self, test_batch, batch_idx):
         """
@@ -288,8 +297,7 @@ class BertNewsClassifier(pl.LightningModule):
         self.val_acc(output, targets)
         self.log("val_acc", self.val_acc.compute())
         self.log("val_loss", loss, sync_dist=True)
-        return {"val_step_loss": loss}
-
+        return {"val_step_loss": loss, "acc": self.val_acc.compute()}
 
     def configure_optimizers(self):
         """
@@ -300,7 +308,12 @@ class BertNewsClassifier(pl.LightningModule):
         self.optimizer = AdamW(self.parameters(), lr=self.args["lr"])
         self.scheduler = {
             "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode="min", factor=0.2, patience=2, min_lr=1e-6, verbose=True,
+                self.optimizer,
+                mode="min",
+                factor=0.2,
+                patience=2,
+                min_lr=1e-6,
+                verbose=True,
             ),
             "monitor": "val_loss",
         }
@@ -317,6 +330,8 @@ def train_model(
     learning_rate: int,
     accelerator: str,
     model_save_path: str,
+    bucket_name: str,
+    folder_name: str,
 ):
     """
     method to train and validate the model
@@ -325,11 +340,13 @@ def train_model(
     :param tensorboard_root: Path to save the tensorboard logs
     :param max_epochs: Maximum number of epochs
     :param num_samples: Maximum number of samples to train the model
-    :param batch_size: Number of samples per batch
+    :param batch_size: Number of samples ImportError: sys.meta_path is None, Python is likely shutting downper batch
     :param num_workers: Number of cores to train the model
     :param learning_rate: Learning rate used to train the model
     :param accelerator: single or multi GPU
     :param model_save_path: Path for the model to be saved
+    :param bucket_name: Name of the S3 bucket
+    :param folder_name: Name of the folder to write in S3
     """
 
     if accelerator == "None":
@@ -342,7 +359,7 @@ def train_model(
         "batch_size": batch_size,
         "num_workers": num_workers,
         "lr": learning_rate,
-        "accelerator": accelerator
+        "accelerator": accelerator,
     }
 
     dm = BertDataModule(**dict_args)
@@ -350,8 +367,10 @@ def train_model(
     dm.setup(stage="fit")
 
     model = BertNewsClassifier(**dict_args)
-    early_stopping = EarlyStopping(
-        monitor="val_loss", mode="min", verbose=True)
+    early_stopping = EarlyStopping(monitor="val_loss", mode="min", verbose=True)
+
+    if os.path.exists(os.path.join(tensorboard_root, "bert_lightning_kubeflow")):
+        shutil.rmtree(os.path.join(tensorboard_root, "bert_lightning_kubeflow"))
 
     Path(tensorboard_root).mkdir(parents=True, exist_ok=True)
 
@@ -361,16 +380,50 @@ def train_model(
     Path(model_save_path).mkdir(parents=True, exist_ok=True)
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=model_save_path, filename="bert_news_classification_{epoch:02d}", save_top_k=1, verbose=True, monitor="val_loss", mode="min", prefix="",
+        dirpath=model_save_path,
+        filename="bert_news_classification_{epoch:02d}",
+        save_top_k=1,
+        verbose=True,
+        monitor="val_loss",
+        mode="min",
+        prefix="",
     )
     lr_logger = LearningRateMonitor()
 
     trainer = pl.Trainer(
-        logger = tboard,
-        accelerator = accelerator,
-        callbacks=[
-            lr_logger, early_stopping], checkpoint_callback=checkpoint_callback, max_epochs=max_epochs
+        logger=tboard,
+        accelerator=accelerator,
+        callbacks=[lr_logger, early_stopping],
+        checkpoint_callback=checkpoint_callback,
+        max_epochs=max_epochs,
     )
     trainer.fit(model, dm)
     trainer.test()
 
+    s3 = boto3.resource("s3")
+    bucket_name = bucket_name
+    folder_name = folder_name
+    bucket = s3.Bucket(bucket_name)
+    s3_path = "s3://" + bucket_name + "/" + folder_name
+
+    for obj in bucket.objects.filter(Prefix=folder_name + "/"):
+        s3.Object(bucket.name, obj.key).delete()
+
+    for event_file in os.listdir(
+        tensorboard_root + "/bert_lightning_kubeflow/version_0"
+    ):
+        s3.Bucket(bucket_name).upload_file(
+            tensorboard_root + "/bert_lightning_kubeflow/version_0/" + event_file,
+            folder_name + "/" + event_file,
+            ExtraArgs={"ACL": "public-read"},
+        )
+
+    with open("/logdir.txt", "w") as f:
+        f.write(s3_path)
+
+    # return checkpoint_callback.best_model_path, s3_path
+
+
+# if __name__ == "__main__":
+#     train_model("/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/data_prep_step/bert/data/test", os.getcwd(),
+#                 1, 15, 16, 3, 0.001, None, os.getcwd(), "kubeflow-dataset", "bertViz")

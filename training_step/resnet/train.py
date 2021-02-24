@@ -20,6 +20,9 @@ from torch import nn
 from torch.multiprocessing import Queue
 from torch.utils.data import DataLoader, IterableDataset
 from torchvision import models, transforms
+import boto3
+from botocore.exceptions import ClientError
+
 
 class CIFAR10DataModule(pl.LightningDataModule):
     def __init__(self, **kwargs):
@@ -237,6 +240,8 @@ def train_model(
     learning_rate: int,
     accelerator: str,
     model_save_path: str,
+    bucket_name: str,
+    folder_name: str,
 ):
 
     if accelerator == "None":
@@ -297,6 +302,9 @@ def train_model(
         prefix="",
     )
 
+    if os.path.exists(os.path.join(tensorboard_root, "cifar10_lightning_kubeflow")):
+        shutil.rmtree(os.path.join(tensorboard_root, "cifar10_lightning_kubeflow"))
+
     Path(tensorboard_root).mkdir(parents=True, exist_ok=True)
 
     # Tensorboard root name of the logging directory
@@ -315,5 +323,42 @@ def train_model(
     trainer.fit(model, dm)
     trainer.test()
 
-    return checkpoint_callback.best_model_path
+    s3 = boto3.resource("s3")
+    bucket_name = bucket_name
+    folder_name = folder_name
+    bucket = s3.Bucket(bucket_name)
+    s3_path = "s3://" + bucket_name + "/" + folder_name
 
+    for obj in bucket.objects.filter(Prefix=folder_name + "/"):
+        s3.Object(bucket.name, obj.key).delete()
+
+    for event_file in os.listdir(
+        tensorboard_root + "/cifar10_lightning_kubeflow/version_0"
+    ):
+        s3.Bucket(bucket_name).upload_file(
+            tensorboard_root + "/cifar10_lightning_kubeflow/version_0/" + event_file,
+            folder_name + "/" + event_file,
+            ExtraArgs={"ACL": "public-read"},
+        )
+
+    with open("/logdir.txt", "w") as f:
+        f.write(s3_path)
+
+    #return checkpoint_callback.best_model_path
+
+# if __name__ == "__main__":
+#     train_model(
+#         "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/data_prep_step/resnet/test/webdataset",
+#         model_save_path= "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/checkpoint",
+#         tensorboard_root= "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/tboard",
+#         max_epochs= 1,
+#         gpus = 0,
+#         train_batch_size= None,
+#         val_batch_size= None,
+#         train_num_workers= 4,
+#         val_num_workers= 4,
+#         learning_rate= 0.001,
+#         accelerator= "None",
+#         bucket_name="kubeflow-dataset", 
+#         folder_name="Cifar10Viz"
+#     )

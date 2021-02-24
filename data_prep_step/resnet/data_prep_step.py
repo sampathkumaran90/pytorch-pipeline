@@ -52,3 +52,5 @@ def run_pipeline_component(options):
 
     run_pipeline(options)
 
+# if __name__ == "__main__":
+#     run_pipeline({"output": "test/webdataset"})

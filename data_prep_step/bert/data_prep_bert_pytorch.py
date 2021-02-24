@@ -28,7 +28,6 @@ from pathlib import Path
 
 from torch.utils.data import IterableDataset
 from torchvision import transforms
-import webdataset as wds
 from itertools import islice
 
 
@@ -71,3 +70,9 @@ def run_pipeline_component(options):
     run_pipeline(
         options
     )
+
+# if __name__ == "__main__":
+#     run_pipeline_component({
+#         "output": "data/test",
+#         "dataset_url": "https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz"
+#     })

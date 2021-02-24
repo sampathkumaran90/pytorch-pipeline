@@ -20,6 +20,8 @@ parser.add_argument('--learning_rate', type=float, default=0.001,
                     help="Learning rate for training")
 parser.add_argument('--accelerator', type=str, default="None", help="Acceleration")
 parser.add_argument('--model_save_path', type=str, help="Model save directory")
+parser.add_argument('--bucket_name', type=str, help="Bucket name")
+parser.add_argument('--folder_name', type=str, help="S3 bucket folder")
 
 args = parser.parse_args()
 
@@ -31,4 +33,6 @@ train_model(train_glob=args.train_glob,
             num_workers=args.num_workers,
             learning_rate=args.learning_rate,
             accelerator=args.accelerator,
-            model_save_path=args.model_save_path)
+            model_save_path=args.model_save_path,
+            bucket_name=args.bucket_name,
+            folder_name=args.folder_name)

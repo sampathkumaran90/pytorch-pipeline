@@ -11,9 +11,9 @@ python3 gen_image_timestamp.py > curr_time.txt
 export images_tag=$(cat curr_time.txt)
 echo ++++ Building component images with tag=$images_tag
 
-MODEL=resnet
+MODEL=bert
 
-for COMPONENT in training_step data_prep_step
+for COMPONENT in training_step data_prep_step visualization_step
 do
     cd ./$COMPONENT/$MODEL
 
@@ -36,7 +36,7 @@ pwd
 echo
 echo Running pipeline compilation
 # python3 pipeline.py --target mp
-python3 pipeline.py --target kfp --model resnet
+python3 pipeline.py --target kfp --model bert
 
 
 #echo 
