@@ -12,7 +12,7 @@ implementation:
     command: ["python", "/component/entrypoint.py"]
     args: [
       --board_path, {inputValue: board_path},
-      --outputs, {outputPath: outputs}
+      --outputs, {outputPath: outputs},
     ]
     fileOutputs:
       MLPipeline UI metadata: /mlpipeline-ui-metadata.json

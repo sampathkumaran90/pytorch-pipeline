@@ -2,9 +2,10 @@ import json
 import os
 from pathlib import Path
 
-def show_viz(board_path, outputs):
+def show_viz(board_path, outputs, metrics_outputs):
     
     Path(outputs).mkdir(parents=True, exist_ok=True)
+    Path(metrics_outputs).mkdir(parents=True, exist_ok=True)
 
     print("\n\nBOARD PATH")
     print(board_path)

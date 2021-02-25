@@ -332,6 +332,7 @@ def train_model(
     model_save_path: str,
     bucket_name: str,
     folder_name: str,
+    webapp_path: str
 ):
     """
     method to train and validate the model
@@ -347,6 +348,7 @@ def train_model(
     :param model_save_path: Path for the model to be saved
     :param bucket_name: Name of the S3 bucket
     :param folder_name: Name of the folder to write in S3
+    :param webapp_path: Path to save the web content
     """
 
     if accelerator == "None":
@@ -420,6 +422,33 @@ def train_model(
 
     with open("/logdir.txt", "w") as f:
         f.write(s3_path)
+
+    if os.path.exists(webapp_path):
+        shutil.rmtree(webapp_path)
+
+    Path(webapp_path).mkdir(parents=True, exist_ok=True)
+
+    rendered_template = """
+    <html>
+        <head>
+            <title>Test Website</title>
+        </head>
+        <body>
+            <div>{}<div>
+        </body>
+    </html>""".format("Hello World!!!")
+
+    with open(webapp_path + "/test.html", "w") as f:
+        f.write(rendered_template)
+
+    s3.Bucket(bucket_name).upload_file(
+        webapp_path + "/test.html",
+        "test.html",
+        ExtraArgs={"ACL": "public-read"},
+    )
+
+    with open("/logdirweb.txt", "w") as f:
+        f.write("https://kubeflow-dataset.s3.us-east-2.amazonaws.com/test.html")
 
     # return checkpoint_callback.best_model_path, s3_path
 

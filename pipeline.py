@@ -1,7 +1,6 @@
 import argparse
 import os
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model",
@@ -27,10 +26,7 @@ if is_kfp:
 else:
     print("Building for Managed Pipelines backend")
 
-# import kfp.gcp as gcp
 import kfp
-
-
 
 if is_kfp:
     from kfp.components import load_component_from_file, load_component_from_url
@@ -55,124 +51,70 @@ list_item_op = load_component_from_file("list_step/component.yaml")
 # )
 tensorboard_op = load_component_from_file(f"visualization_step/{args.model}/component.yaml")
 
-metrics_op = load_component_from_file("component_template.yaml")
+viz_web_op = load_component_from_file(f"visualize_html/bert/component.yaml")
 
+
+#metrics_op = load_component_from_file("component_template.yaml")
 
 @dsl.pipeline(name="pytorchcnn", output_directory="/tmp/output")
 def train_imagenet_cnn_pytorch():
 
-    # BERT
+    if args.model == "bert":
+        data_prep_task = data_prep_op(
+            input_data="",
+            dataset_url="https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz",
+        )
 
-    data_prep_task = data_prep_op(
-        input_data="",
-        dataset_url="https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz",
-    )
+        train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"],
+            maxepochs = 2,
+            numsamples = 150,
+            batchsize = 16,
+            numworkers = 2,
+            learningrate = 0.001,
+            accelerator = "",
+            bucketname = "kubeflow-dataset",
+            foldername = "bertViz")
+            .set_cpu_limit('4').
+            set_memory_limit('14Gi')
+        ).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
 
-    train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"],
-        maxepochs = 2,
-        numsamples = 150,
-        batchsize = 16,
-        numworkers = 2,
-        learningrate = 0.001,
-        accelerator = "",
-        bucketname = "kubeflow-dataset",
-        foldername = "bertViz")
-        .set_cpu_limit('4').
-        set_memory_limit('14Gi')
-    ).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
+        # list_item_op_task = list_item_op(train_model_task.outputs["TensorboardLogs"])
 
-    print("\n\nTRAIN MODEL TASK")
-    print(train_model_task.outputs["TensorboardLogs"])
-    print("\n\n")
+        tensorboard_task = tensorboard_op(board_path='%s' % train_model_task.outputs['TensorboardS3Path']).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
 
-    list_item_op_task = list_item_op(train_model_task.outputs["TensorboardLogs"])
+        # list_item_op_task = list_item_op(tensorboard_task.outputs["outputs"])
 
-    tensorboard_task = tensorboard_op(board_path='%s' % train_model_task.outputs['TensorboardS3Path']).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
+        viz_web_task = viz_web_op(board_path='%s' % train_model_task.outputs['WebS3Path']).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
 
-    list_item_op_task = list_item_op(tensorboard_task.outputs["outputs"])
+    if args.model == "resnet":
+        data_prep_task = data_prep_op(input_data="")
 
-    metrics_task = metrics_op()
+        list_item_op_task = list_item_op(data_prep_task.outputs["output_data"])
 
-    # def produce_metrics(
-    # # Note when the `create_component_from_func` method converts the function to a component, the function parameter "mlpipeline_metrics_path" becomes an output with name "mlpipeline_metrics" which is the correct name for metrics output.
-    #     mlpipeline_metrics_path: OutputPath('Metrics'),
-    # ):
-    #     import json
+        train_model_task = (
+            train_model_op(
+                trainingdata=data_prep_task.outputs["output_data"],
+                maxepochs=1,
+                gpus=0,
+                trainbatchsize="None",
+                valbatchsize="None",
+                trainnumworkers=4,
+                valnumworkers=4,
+                learningrate=0.001,
+                accelerator="None",
+                bucketname="kubeflow-dataset",
+                foldername="Cifar10Viz",
+            )
+            .set_cpu_limit("4")
+            .set_memory_limit("14Gi")
+        ).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
 
-    #     accuracy = 0.9
-    #     metrics = {
-    #         'metrics': [{
-    #         'name': 'accuracy-score', # The name of the metric. Visualized as the column name in the runs table.
-    #         'numberValue':  accuracy, # The value of the metric. Must be a numeric value.
-    #         'format': "PERCENTAGE",   # The optional format of the metric. Supported values are "RAW" (displayed in raw format) and "PERCENTAGE" (displayed in percentage format).
-    #         }]
-    #     }
-    #     with open(mlpipeline_metrics_path, 'w') as f:
-    #         json.dump(metrics, f)
-
-    # produce_metrics_op = create_component_from_func(
-    #     produce_metrics,
-    #     base_image='python:3.7',
-    #     packages_to_install=[],
-    #     output_component_file='component.yaml',
-    # )
-
-    # produce_metrics_op()
-
-
-
-
-    # RESNET MODEL
-
-    # data_prep_task = data_prep_op(input_data="")
-
-    # train_model_task = (
-    #     train_model_op(
-    #         trainingdata=data_prep_task.outputs["output_data"],
-    #         maxepochs=1,
-    #         gpus=1,
-    #         trainbatchsize="None",
-    #         valbatchsize="None",
-    #         trainnumworkers=4,
-    #         valnumworkers=4,
-    #         learningrate=0.001,
-    #         accelerator="None",
-    #         bucketname="kubeflow-dataset",
-    #         foldername="Cifar10Viz",
-    #     )
-    #     .set_cpu_limit("4")
-    #     .set_memory_limit("14Gi")
-    # ).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
-
-
-    # tensorboard_task = tensorboard_op(board_path='%s' % train_model_task.outputs['TensorboardS3Path']).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
-
-    # train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"])
-    #     .set_cpu_limit('4').
-    #     set_memory_limit('14Gi')
-    # )
-
-    # list_item_task = list_item_op(train_model_task.outputs["modelcheckpoint"])
-
-    # deploy_model_task = deploy_model_op(
-
-
-# 	action = 'create',
-# 	model_name='pytorch',
-# 	default_model_uri='gs://kfserving-samples/models/pytorch/cifar10/',
-# 	namespace='admin',
-# 	framework='pytorch',
-# 	default_custom_model_spec='{}',
-# 	canary_custom_model_spec='{}',
-# 	autoscaling_target='0',
-# 	kfserving_endpoint=''
-# )
+        tensorboard_task = tensorboard_op(board_path='%s' % train_model_task.outputs['TensorboardS3Path']).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
 
 
 if is_kfp:
     compiler.Compiler().compile(
         pipeline_func=train_imagenet_cnn_pytorch,
-        # pipeline_root = PIPELINE_ROOT, this doesn't work for some reason
         package_path="pytorch_dpa_demo_kfp.yaml",
     )
 else:

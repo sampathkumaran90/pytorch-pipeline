@@ -8,11 +8,11 @@ outputs:
   - {name: outputs, type: String, description: "Path for the output"}
 implementation:
   container:
-    image: jagadeeshj/visualization_step:24-02-2021-21-28-48.600572
+    image: jagadeeshj/visualization_step:25-02-2021-17-32-24.356692
     command: ["python", "/component/entrypoint.py"]
     args: [
       --board_path, {inputValue: board_path},
-      --outputs, {outputPath: outputs}
+      --outputs, {outputPath: outputs},
     ]
     fileOutputs:
       MLPipeline UI metadata: /mlpipeline-ui-metadata.json

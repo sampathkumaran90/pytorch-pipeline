@@ -12,8 +12,11 @@ import torch.nn.functional as F
 import torchvision
 import webdataset as wds
 from PIL import Image
-from pytorch_lightning.callbacks import (EarlyStopping, LearningRateMonitor,
-                                         ModelCheckpoint)
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.metrics import Accuracy
 from torch import nn
@@ -22,7 +25,7 @@ from torch.utils.data import DataLoader, IterableDataset
 from torchvision import models, transforms
 import boto3
 from botocore.exceptions import ClientError
-
+import matplotlib.pyplot as plt
 
 class CIFAR10DataModule(pl.LightningDataModule):
     def __init__(self, **kwargs):
@@ -64,7 +67,6 @@ class CIFAR10DataModule(pl.LightningDataModule):
     def getNumFiles(input_path):
         return len(os.listdir(input_path)) - 1
 
-
     def setup(self, stage=None):
         """
         Downloads the data, parse it and split the data into train, test, validation data
@@ -82,12 +84,18 @@ class CIFAR10DataModule(pl.LightningDataModule):
         val_count = self.getNumFiles(val_base_url)
         test_count = self.getNumFiles(test_base_url)
 
-        train_url = "{}/{}-{}".format(train_base_url, "train", "{0.." + str(train_count) + "}.tar")
-        valid_url = "{}/{}-{}".format(val_base_url, "val", "{0.." + str(val_count) + "}.tar")
-        test_url = "{}/{}-{}".format(test_base_url, "test", "{0.." + str(test_count) + "}.tar")
+        train_url = "{}/{}-{}".format(
+            train_base_url, "train", "{0.." + str(train_count) + "}.tar"
+        )
+        valid_url = "{}/{}-{}".format(
+            val_base_url, "val", "{0.." + str(val_count) + "}.tar"
+        )
+        test_url = "{}/{}-{}".format(
+            test_base_url, "test", "{0.." + str(test_count) + "}.tar"
+        )
 
         self.train_dataset = (
-            wds.Dataset(train_url, handler=wds.warn_and_continue, length=40000//40)
+            wds.Dataset(train_url, handler=wds.warn_and_continue, length=40000 // 40)
             .shuffle(100)
             .decode("pil")
             .rename(image="ppm;jpg;jpeg;png", info="cls")
@@ -97,7 +105,7 @@ class CIFAR10DataModule(pl.LightningDataModule):
         )
 
         self.valid_dataset = (
-            wds.Dataset(valid_url, handler=wds.warn_and_continue, length=10000//20)
+            wds.Dataset(valid_url, handler=wds.warn_and_continue, length=10000 // 20)
             .shuffle(100)
             .decode("pil")
             .rename(image="ppm", info="cls")
@@ -107,7 +115,7 @@ class CIFAR10DataModule(pl.LightningDataModule):
         )
 
         self.test_dataset = (
-            wds.Dataset(test_url, handler=wds.warn_and_continue, length=10000//20)
+            wds.Dataset(test_url, handler=wds.warn_and_continue, length=10000 // 20)
             .shuffle(100)
             .decode("pil")
             .rename(image="ppm", info="cls")
@@ -124,7 +132,9 @@ class CIFAR10DataModule(pl.LightningDataModule):
         :return: output - Train data loader for the given input
         """
         self.train_data_loader = self.create_data_loader(
-            self.train_dataset, self.args["train_batch_size"], self.args["train_num_workers"]
+            self.train_dataset,
+            self.args["train_batch_size"],
+            self.args["train_num_workers"],
         )
         return self.train_data_loader
 
@@ -133,7 +143,9 @@ class CIFAR10DataModule(pl.LightningDataModule):
         :return: output - Validation data loader for the given input
         """
         self.val_data_loader = self.create_data_loader(
-            self.valid_dataset, self.args["val_batch_size"], self.args["val_num_workers"]
+            self.valid_dataset,
+            self.args["val_batch_size"],
+            self.args["val_num_workers"],
         )
         return self.val_data_loader
 
@@ -173,6 +185,11 @@ class CIFAR10Classifier(pl.LightningModule):
         return out
 
     def training_step(self, train_batch, batch_idx):
+        if batch_idx == 0:
+            self.reference_image = (train_batch[0][0]).unsqueeze(0)
+            #self.reference_image.resize((1,1,28,28))
+            print("\n\nREFERENCE IMAGE!!!")
+            print(self.reference_image.shape)
         x, y = train_batch
         y_hat = self.forward(x)
         loss = F.cross_entropy(y_hat, y)
@@ -186,7 +203,7 @@ class CIFAR10Classifier(pl.LightningModule):
         x, y = test_batch
         y_hat = self.forward(x)
         loss = F.cross_entropy(y_hat, y)
-        if self.args['accelerator'] is not None:
+        if self.args["accelerator"] is not None:
             self.log("test_loss", loss, sync_dist=True)
         else:
             self.log("test_loss", loss)
@@ -199,13 +216,13 @@ class CIFAR10Classifier(pl.LightningModule):
         x, y = val_batch
         y_hat = self.forward(x)
         loss = F.cross_entropy(y_hat, y)
-        if self.args['accelerator'] is not None:
+        if self.args["accelerator"] is not None:
             self.log("val_loss", loss, sync_dist=True)
         else:
             self.log("val_loss", loss)
         self.val_acc(y_hat, y)
         self.log("val_acc", self.val_acc.compute())
-        return {"val_step_loss": loss, 'val_loss': loss}
+        return {"val_step_loss": loss, "val_loss": loss}
 
     def configure_optimizers(self):
         """
@@ -226,6 +243,47 @@ class CIFAR10Classifier(pl.LightningModule):
             "monitor": "val_loss",
         }
         return [self.optimizer], [self.scheduler]
+
+    def makegrid(self, output, numrows):
+        outer = torch.Tensor.cpu(output).detach()
+        plt.figure(figsize=(20, 5))
+        b = np.array([]).reshape(0, outer.shape[2])
+        c = np.array([]).reshape(numrows * outer.shape[2], 0)
+        i = 0
+        j = 0
+        while i < outer.shape[1]:
+            img = outer[0][i]
+            b = np.concatenate((img, b), axis=0)
+            j += 1
+            if j == numrows:
+                c = np.concatenate((c, b), axis=1)
+                b = np.array([]).reshape(0, outer.shape[2])
+                j = 0
+
+            i += 1
+        return c
+
+    def showActivations(self, x):
+
+        # logging reference image
+        self.logger.experiment.add_image(
+            "input", torch.Tensor.cpu(x[0][0]), self.current_epoch, dataformats="HW"
+        )
+
+        # logging layer 1 activations
+        out = self.model_conv.conv1(x)
+        c = self.makegrid(out, 4)
+        self.logger.experiment.add_image(
+            "layer 1", c, self.current_epoch, dataformats="HW"
+        )
+
+    def training_epoch_end(self, outputs):
+        self.showActivations(self.reference_image)
+
+        # Logging graph
+        if(self.current_epoch==0):
+            sampleImg=torch.rand((1,3,64,64))
+            self.logger.experiment.add_graph(CIFAR10Classifier(),sampleImg)
 
 
 def train_model(
@@ -280,7 +338,9 @@ def train_model(
     dm.setup(stage="fit")
 
     model = CIFAR10Classifier(**dict_args)
-    early_stopping = EarlyStopping(monitor="val_loss", mode="min", patience=5, verbose=True)
+    early_stopping = EarlyStopping(
+        monitor="val_loss", mode="min", patience=5, verbose=True
+    )
 
     Path(model_save_path).mkdir(parents=True, exist_ok=True)
 
@@ -317,7 +377,7 @@ def train_model(
         checkpoint_callback=checkpoint_callback,
         max_epochs=max_epochs,
         callbacks=[lr_logger, early_stopping],
-        accelerator=accelerator
+        accelerator=accelerator,
     )
 
     trainer.fit(model, dm)
@@ -344,21 +404,22 @@ def train_model(
     with open("/logdir.txt", "w") as f:
         f.write(s3_path)
 
-    #return checkpoint_callback.best_model_path
+    # return checkpoint_callback.best_model_path
+
 
 # if __name__ == "__main__":
 #     train_model(
 #         "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/data_prep_step/resnet/test/webdataset",
-#         model_save_path= "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/checkpoint",
-#         tensorboard_root= "/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/tboard",
-#         max_epochs= 1,
-#         gpus = 0,
-#         train_batch_size= None,
-#         val_batch_size= None,
-#         train_num_workers= 4,
-#         val_num_workers= 4,
-#         learning_rate= 0.001,
-#         accelerator= "None",
-#         bucket_name="kubeflow-dataset", 
-#         folder_name="Cifar10Viz"
+#         model_save_path="/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/checkpoint",
+#         tensorboard_root="/home/kumar/Desktop/KUBEFLOW/pytorch-pipeline/training_step/resnet/tboard",
+#         max_epochs=1,
+#         gpus=0,
+#         train_batch_size=None,
+#         val_batch_size=None,
+#         train_num_workers=4,
+#         val_num_workers=4,
+#         learning_rate=0.001,
+#         accelerator="None",
+#         bucket_name="kubeflow-dataset",
+#         folder_name="Cifar10Viz",
 #     )

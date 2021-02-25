@@ -8,7 +8,7 @@ outputs:
   - {name: outputs, type: String, description: "Path for the output"}
 implementation:
   container:
-    image: jagadeeshj/visualization_step:24-02-2021-19-51-49.968590
+    image: jagadeeshj/visualization_step:25-02-2021-13-17-24.972392
     command: ["python", "/component/entrypoint.py"]
     args: [
       --board_path, {inputValue: board_path},

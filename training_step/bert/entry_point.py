@@ -22,6 +22,7 @@ parser.add_argument('--accelerator', type=str, default="None", help="Acceleratio
 parser.add_argument('--model_save_path', type=str, help="Model save directory")
 parser.add_argument('--bucket_name', type=str, help="Bucket name")
 parser.add_argument('--folder_name', type=str, help="S3 bucket folder")
+parser.add_argument('--webapp_path', type=str, help="Web app path")
 
 args = parser.parse_args()
 
@@ -35,4 +36,5 @@ train_model(train_glob=args.train_glob,
             accelerator=args.accelerator,
             model_save_path=args.model_save_path,
             bucket_name=args.bucket_name,
-            folder_name=args.folder_name)
+            folder_name=args.folder_name,
+            webapp_path=args.webapp_path)

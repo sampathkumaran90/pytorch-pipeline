@@ -7,7 +7,7 @@ import os
 from os import path
 import logging
 
-import data_prep.data_prep_step as dp_package
+import data_prep_step as dp_package
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     print(args)
 
-    fixed_output_dir = args.output_data + "/prefix"
+    fixed_output_dir = args.output_data
     print("fixed output dir: {}".format(fixed_output_dir))
 
     pipeline_options = {

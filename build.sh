@@ -13,7 +13,7 @@ echo ++++ Building component images with tag=$images_tag
 
 MODEL=bert
 
-for COMPONENT in training_step data_prep_step visualization_step
+for COMPONENT in data_prep_step training_step visualization_step visualize_html
 do
     cd ./$COMPONENT/$MODEL
 

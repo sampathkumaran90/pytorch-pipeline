@@ -15,7 +15,9 @@ inputs:
 outputs:
     - {name: ModelCheckpoint, type: Directory, description: "Path for the resulting model checkpoint"}
     - {name: TensorboardLogs, type: String, description: "Path for the tensorboard logs"}
+    - {name: WebLogs, type: String, description: "Path for the web logs"}
     - {name: TensorboardS3Path, type: String, description: "Tensorboard S3 Path"}
+    - {name: WebS3Path, type: String, description: "Web S3 Path"}
 
 implementation:
     container:
@@ -32,7 +34,9 @@ implementation:
             --learning_rate, {inputValue: LearningRate},
             --accelerator, {inputValue: Accelerator},
             --bucket_name, {inputValue: BucketName},
-            --folder_name, {inputValue: FolderName}
+            --folder_name, {inputValue: FolderName},
+            --webapp_path, {outputPath: WebLogs}
         ]
         fileOutputs: 
             TensorboardS3Path: /logdir.txt
+            WebS3Path: /logdirweb.txt

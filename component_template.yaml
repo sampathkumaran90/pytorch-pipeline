@@ -1,0 +1,22 @@
+name: Produce metrics
+outputs:
+- {name: MLPipeline Metrics, type: Metrics}
+implementation:
+  container:
+    image: alpine
+    command:
+    - sh
+    - -exc
+    - |
+      output_metrics_path=$0
+      mkdir -p "$(dirname "$output_metrics_path")"
+      echo '{
+        "metrics": [{
+          "name": "accuracy-score",
+          "numberValue": 0.8,
+          "format": "PERCENTAGE"
+        }]
+      }' > "$output_metrics_path"
+    - {outputPath: MLPipeline Metrics}
+    fileOutputs:
+      MLPipeline Metrics: /mlpipeline-metrics.json

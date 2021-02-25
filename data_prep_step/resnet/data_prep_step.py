@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
 import webdataset as wds
 from pathlib import Path
-from itertools import islice
 from sklearn.model_selection import train_test_split
 
 

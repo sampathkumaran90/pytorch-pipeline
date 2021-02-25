@@ -1,0 +1,17 @@
+name: WebApplication Viz
+description: WebApplication Viz
+inputs:
+  - {name: board_path, type: String, description: 'Path of Website log'} # type: {GCSPath: {data_type: CSV}}
+outputs:
+  - {name: MLPipeline UI metadata, type: UI metadata}
+  - {name: outputs, type: String, description: "Path for the output"}
+implementation:
+  container:
+    image: jagadeeshj/visualize_html:25-02-2021-17-32-24.356692
+    command: ["python", "/component/entrypoint.py"]
+    args: [
+      --board_path, {inputValue: board_path},
+      --outputs, {outputPath: outputs},
+    ]
+    fileOutputs:
+      MLPipeline UI metadata: /mlpipeline-ui-metadata.json

@@ -2,76 +2,18 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: pytorchcnn-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0, pipelines.kubeflow.org/pipeline_compilation_time: '2021-02-24T21:30:12.637422',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0, pipelines.kubeflow.org/pipeline_compilation_time: '2021-02-25T17:33:30.131880',
     pipelines.kubeflow.org/pipeline_spec: '{"name": "pytorchcnn"}'}
   labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.4.0}
 spec:
   entrypoint: pytorchcnn
   templates:
-  - name: list-items
-    container:
-      args: []
-      command:
-      - sh
-      - -ex
-      - -c
-      - |
-        mkdir -p "$(dirname "$1")"
-        #ls --almost-all --recursive "$0" > "$1"
-        ls -A -R "$0" > "$1"
-      - /tmp/inputs/Directory/data
-      - /tmp/outputs/Items/data
-      image: alpine
-    inputs:
-      artifacts:
-      - {name: train-pytorch-bert-TensorboardLogs, path: /tmp/inputs/Directory/data}
-    outputs:
-      artifacts:
-      - {name: list-items-Items, path: /tmp/outputs/Items/data}
-    metadata:
-      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Recursively
-          list directory contents.", "implementation": {"container": {"command": ["sh",
-          "-ex", "-c", "mkdir -p \"$(dirname \"$1\")\"\n#ls --almost-all --recursive
-          \"$0\" > \"$1\"\nls -A -R \"$0\" > \"$1\"\n", {"inputPath": "Directory"},
-          {"outputPath": "Items"}], "image": "alpine"}}, "inputs": [{"name": "Directory"}],
-          "name": "List items", "outputs": [{"name": "Items"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
-          "3e55e46408af831ababab3a8118e4538d0a798321f8354f9a3019a297f255055", "url":
-          "list_step/component.yaml"}'}
-  - name: list-items-2
-    container:
-      args: []
-      command:
-      - sh
-      - -ex
-      - -c
-      - |
-        mkdir -p "$(dirname "$1")"
-        #ls --almost-all --recursive "$0" > "$1"
-        ls -A -R "$0" > "$1"
-      - /tmp/inputs/Directory/data
-      - /tmp/outputs/Items/data
-      image: alpine
-    inputs:
-      artifacts:
-      - {name: tensorboard-viz-outputs, path: /tmp/inputs/Directory/data}
-    outputs:
-      artifacts:
-      - {name: list-items-2-Items, path: /tmp/outputs/Items/data}
-    metadata:
-      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Recursively
-          list directory contents.", "implementation": {"container": {"command": ["sh",
-          "-ex", "-c", "mkdir -p \"$(dirname \"$1\")\"\n#ls --almost-all --recursive
-          \"$0\" > \"$1\"\nls -A -R \"$0\" > \"$1\"\n", {"inputPath": "Directory"},
-          {"outputPath": "Items"}], "image": "alpine"}}, "inputs": [{"name": "Directory"}],
-          "name": "List items", "outputs": [{"name": "Items"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
-          "3e55e46408af831ababab3a8118e4538d0a798321f8354f9a3019a297f255055", "url":
-          "list_step/component.yaml"}'}
   - name: preprocesstextdata
     container:
       args: [--input_data, /tmp/inputs/input_data/data, --dataset_url, 'https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz',
         --output_data, /tmp/outputs/output_data/data]
       command: [python, /component/entry_point.py]
-      image: jagadeeshj/data_prep_step:24-02-2021-21-28-48.600572
+      image: jagadeeshj/data_prep_step:25-02-2021-17-32-24.356692
     inputs:
       artifacts:
       - name: input_data
@@ -85,62 +27,18 @@ spec:
           data for PyTorch training.\n", "implementation": {"container": {"args":
           ["--input_data", {"inputPath": "input_data"}, "--dataset_url", {"inputValue":
           "dataset_url"}, "--output_data", {"outputPath": "output_data"}], "command":
-          ["python", "/component/entry_point.py"], "image": "jagadeeshj/data_prep_step:24-02-2021-21-28-48.600572"}},
+          ["python", "/component/entry_point.py"], "image": "jagadeeshj/data_prep_step:25-02-2021-17-32-24.356692"}},
           "inputs": [{"description": "The path to the input dataset", "name": "input_data",
           "type": "String"}, {"description": "The path to the dataset file", "name":
           "dataset_url", "type": "String"}], "name": "PreProcessTextData", "outputs":
           [{"description": "Output data location", "name": "output_data", "type":
-          "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "a860c4666a5501d17601eec3caa24933a730d54ecfd6b9d797f6c8b047c593ca",
+          "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "f3b2ab070c5b66e3f52fd5031f569252ff0b61b7517d88c1a0b5aca020bdd0fd",
           "url": "data_prep_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"dataset_url":
           "https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz"}'}
-  - name: produce-metrics
-    container:
-      args: []
-      command:
-      - sh
-      - -exc
-      - |
-        output_metrics_path=$0
-        mkdir -p "$(dirname "$output_metrics_path")"
-        echo '{
-          "metrics": [{
-            "name": "accuracy-score",
-            "numberValue": 0.8,
-            "format": "PERCENTAGE"
-          }]
-        }' > "$output_metrics_path"
-      - /tmp/outputs/MLPipeline_Metrics/data
-      image: alpine
-    outputs:
-      artifacts:
-      - {name: mlpipeline-metrics, path: /tmp/outputs/MLPipeline_Metrics/data}
-    metadata:
-      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
-          {"command": ["sh", "-exc", "output_metrics_path=$0\nmkdir -p \"$(dirname
-          \"$output_metrics_path\")\"\necho ''{\n  \"metrics\": [{\n    \"name\":
-          \"accuracy-score\",\n    \"numberValue\": 0.8,\n    \"format\": \"PERCENTAGE\"\n  }]\n}''
-          > \"$output_metrics_path\"\n", {"outputPath": "MLPipeline Metrics"}], "image":
-          "alpine"}}, "name": "Produce metrics", "outputs": [{"name": "MLPipeline
-          Metrics", "type": "Metrics"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
-          "8439da9d0c7fbb5c07d7b4aaff5971564cd2c709a7be109f8c5363fd657df6ee", "url":
-          "component_template.yaml"}'}
   - name: pytorchcnn
     dag:
       tasks:
-      - name: list-items
-        template: list-items
-        dependencies: [train-pytorch-bert]
-        arguments:
-          artifacts:
-          - {name: train-pytorch-bert-TensorboardLogs, from: '{{tasks.train-pytorch-bert.outputs.artifacts.train-pytorch-bert-TensorboardLogs}}'}
-      - name: list-items-2
-        template: list-items-2
-        dependencies: [tensorboard-viz]
-        arguments:
-          artifacts:
-          - {name: tensorboard-viz-outputs, from: '{{tasks.tensorboard-viz.outputs.artifacts.tensorboard-viz-outputs}}'}
       - {name: preprocesstextdata, template: preprocesstextdata}
-      - {name: produce-metrics, template: produce-metrics}
       - name: tensorboard-viz
         template: tensorboard-viz
         dependencies: [train-pytorch-bert]
@@ -153,6 +51,12 @@ spec:
         arguments:
           artifacts:
           - {name: preprocesstextdata-output_data, from: '{{tasks.preprocesstextdata.outputs.artifacts.preprocesstextdata-output_data}}'}
+      - name: webapplication-viz
+        template: webapplication-viz
+        dependencies: [train-pytorch-bert]
+        arguments:
+          parameters:
+          - {name: train-pytorch-bert-WebS3Path, value: '{{tasks.train-pytorch-bert.outputs.parameters.train-pytorch-bert-WebS3Path}}'}
   - name: tensorboard-viz
     container:
       args: [--board_path, '{{inputs.parameters.train-pytorch-bert-TensorboardS3Path}}',
@@ -165,7 +69,7 @@ spec:
       - name: AWS_SECRET_ACCESS_KEY
         valueFrom:
           secretKeyRef: {key: AWS_SECRET_ACCESS_KEY, name: aws-secret}
-      image: jagadeeshj/visualization_step:24-02-2021-21-28-48.600572
+      image: jagadeeshj/visualization_step:25-02-2021-17-32-24.356692
     inputs:
       parameters:
       - {name: train-pytorch-bert-TensorboardS3Path}
@@ -179,12 +83,12 @@ spec:
           Viz", "implementation": {"container": {"args": ["--board_path", {"inputValue":
           "board_path"}, "--outputs", {"outputPath": "outputs"}], "command": ["python",
           "/component/entrypoint.py"], "fileOutputs": {"MLPipeline Metrics": "/mlpipeline-metrics.json",
-          "MLPipeline UI metadata": "/mlpipeline-ui-metadata.json"}, "image": "jagadeeshj/visualization_step:24-02-2021-21-28-48.600572"}},
+          "MLPipeline UI metadata": "/mlpipeline-ui-metadata.json"}, "image": "jagadeeshj/visualization_step:25-02-2021-17-32-24.356692"}},
           "inputs": [{"description": "Path of Tensorboard log", "name": "board_path",
           "type": "String"}], "name": "Tensorboard Viz", "outputs": [{"name": "MLPipeline
           UI metadata", "type": "UI metadata"}, {"name": "MLPipeline Metrics", "type":
           "Metrics"}, {"description": "Path for the output", "name": "outputs", "type":
-          "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "83432ee753905bd98cd49c3a27fd292254a179a5e4da185dc4c8634e8852ffa0",
+          "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "b015a53834ab95505dd57230f7fe99b79f702f19e40d1d78c8557302fa1f4d2b",
           "url": "visualization_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"board_path":
           "{{inputs.parameters.train-pytorch-bert-TensorboardS3Path}}"}'}
   - name: train-pytorch-bert
@@ -193,7 +97,7 @@ spec:
         --tensorboard_root, /tmp/outputs/TensorboardLogs/data, --max_epochs, '2',
         --num_samples, '150', --batch_size, '16', --num_workers, '2', --learning_rate,
         '0.001', --accelerator, '', --bucket_name, kubeflow-dataset, --folder_name,
-        bertViz]
+        bertViz, --webapp_path, /tmp/outputs/WebLogs/data]
       command: [python, /component/entry_point.py]
       env:
       - name: AWS_ACCESS_KEY_ID
@@ -202,7 +106,7 @@ spec:
       - name: AWS_SECRET_ACCESS_KEY
         valueFrom:
           secretKeyRef: {key: AWS_SECRET_ACCESS_KEY, name: aws-secret}
-      image: jagadeeshj/training_step:24-02-2021-21-28-48.600572
+      image: jagadeeshj/training_step:25-02-2021-17-32-24.356692
       resources:
         limits: {cpu: '4', memory: 14Gi}
     inputs:
@@ -212,10 +116,14 @@ spec:
       parameters:
       - name: train-pytorch-bert-TensorboardS3Path
         valueFrom: {path: /logdir.txt}
+      - name: train-pytorch-bert-WebS3Path
+        valueFrom: {path: /logdirweb.txt}
       artifacts:
       - {name: train-pytorch-bert-ModelCheckpoint, path: /tmp/outputs/ModelCheckpoint/data}
       - {name: train-pytorch-bert-TensorboardLogs, path: /tmp/outputs/TensorboardLogs/data}
       - {name: train-pytorch-bert-TensorboardS3Path, path: /logdir.txt}
+      - {name: train-pytorch-bert-WebLogs, path: /tmp/outputs/WebLogs/data}
+      - {name: train-pytorch-bert-WebS3Path, path: /logdirweb.txt}
     metadata:
       annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Train
           PyTorch Bert", "implementation": {"container": {"args": ["--train_glob",
@@ -225,27 +133,63 @@ spec:
           "--batch_size", {"inputValue": "BatchSize"}, "--num_workers", {"inputValue":
           "NumWorkers"}, "--learning_rate", {"inputValue": "LearningRate"}, "--accelerator",
           {"inputValue": "Accelerator"}, "--bucket_name", {"inputValue": "BucketName"},
-          "--folder_name", {"inputValue": "FolderName"}], "command": ["python", "/component/entry_point.py"],
-          "fileOutputs": {"TensorboardS3Path": "/logdir.txt"}, "image": "jagadeeshj/training_step:24-02-2021-21-28-48.600572"}},
-          "inputs": [{"description": "Path to the training data", "name": "TrainingData",
-          "type": "String"}, {"description": "Maximum number of epochs", "name": "MaxEpochs",
-          "type": "Integer"}, {"description": "Maximum number of samples", "name":
-          "NumSamples", "type": "Integer"}, {"description": "Batch size", "name":
-          "BatchSize", "type": "Integer"}, {"description": "Number of workers", "name":
-          "NumWorkers", "type": "Integer"}, {"description": "Learning rate", "name":
-          "LearningRate", "type": "Float"}, {"description": "multi gpu training",
-          "name": "Accelerator", "type": "String"}, {"description": "S3 bucket name",
-          "name": "BucketName", "type": "String"}, {"description": "S3 folder", "name":
-          "FolderName", "type": "String"}], "name": "train_pytorch_bert", "outputs":
-          [{"description": "Path for the resulting model checkpoint", "name": "ModelCheckpoint",
-          "type": "Directory"}, {"description": "Path for the tensorboard logs", "name":
-          "TensorboardLogs", "type": "String"}, {"description": "Tensorboard S3 Path",
-          "name": "TensorboardS3Path", "type": "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
-          "5e8579f80f359b536451dec53f7042729f7b8f885fe965df857f6ba5e4ed0316", "url":
-          "training_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"Accelerator":
+          "--folder_name", {"inputValue": "FolderName"}, "--webapp_path", {"outputPath":
+          "WebLogs"}], "command": ["python", "/component/entry_point.py"], "fileOutputs":
+          {"TensorboardS3Path": "/logdir.txt", "WebS3Path": "/logdirweb.txt"}, "image":
+          "jagadeeshj/training_step:25-02-2021-17-32-24.356692"}}, "inputs": [{"description":
+          "Path to the training data", "name": "TrainingData", "type": "String"},
+          {"description": "Maximum number of epochs", "name": "MaxEpochs", "type":
+          "Integer"}, {"description": "Maximum number of samples", "name": "NumSamples",
+          "type": "Integer"}, {"description": "Batch size", "name": "BatchSize", "type":
+          "Integer"}, {"description": "Number of workers", "name": "NumWorkers", "type":
+          "Integer"}, {"description": "Learning rate", "name": "LearningRate", "type":
+          "Float"}, {"description": "multi gpu training", "name": "Accelerator", "type":
+          "String"}, {"description": "S3 bucket name", "name": "BucketName", "type":
+          "String"}, {"description": "S3 folder", "name": "FolderName", "type": "String"}],
+          "name": "train_pytorch_bert", "outputs": [{"description": "Path for the
+          resulting model checkpoint", "name": "ModelCheckpoint", "type": "Directory"},
+          {"description": "Path for the tensorboard logs", "name": "TensorboardLogs",
+          "type": "String"}, {"description": "Path for the web logs", "name": "WebLogs",
+          "type": "String"}, {"description": "Tensorboard S3 Path", "name": "TensorboardS3Path",
+          "type": "String"}, {"description": "Web S3 Path", "name": "WebS3Path", "type":
+          "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest": "d42f7e12cda8532110a6a93d91a0b375190ee5f38dd2a5771d2ddddb9c63b129",
+          "url": "training_step/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"Accelerator":
           "", "BatchSize": "16", "BucketName": "kubeflow-dataset", "FolderName": "bertViz",
           "LearningRate": "0.001", "MaxEpochs": "2", "NumSamples": "150", "NumWorkers":
           "2"}'}
+  - name: webapplication-viz
+    container:
+      args: [--board_path, '{{inputs.parameters.train-pytorch-bert-WebS3Path}}', --outputs,
+        /tmp/outputs/outputs/data]
+      command: [python, /component/entrypoint.py]
+      env:
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef: {key: AWS_ACCESS_KEY_ID, name: aws-secret}
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef: {key: AWS_SECRET_ACCESS_KEY, name: aws-secret}
+      image: jagadeeshj/visualize_html:25-02-2021-17-32-24.356692
+    inputs:
+      parameters:
+      - {name: train-pytorch-bert-WebS3Path}
+    outputs:
+      artifacts:
+      - {name: mlpipeline-ui-metadata, path: /mlpipeline-ui-metadata.json}
+      - {name: webapplication-viz-outputs, path: /tmp/outputs/outputs/data}
+    metadata:
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "WebApplication
+          Viz", "implementation": {"container": {"args": ["--board_path", {"inputValue":
+          "board_path"}, "--outputs", {"outputPath": "outputs"}], "command": ["python",
+          "/component/entrypoint.py"], "fileOutputs": {"MLPipeline UI metadata": "/mlpipeline-ui-metadata.json"},
+          "image": "jagadeeshj/visualize_html:25-02-2021-17-32-24.356692"}}, "inputs":
+          [{"description": "Path of Website log", "name": "board_path", "type": "String"}],
+          "name": "WebApplication Viz", "outputs": [{"name": "MLPipeline UI metadata",
+          "type": "UI metadata"}, {"description": "Path for the output", "name": "outputs",
+          "type": "String"}]}', pipelines.kubeflow.org/component_ref: '{"digest":
+          "fdd4fd52d2770d6dd9b2a18fc3981755734ed4828408c6b0656f4a4fcc0e1078", "url":
+          "visualize_html/bert/component.yaml"}', pipelines.kubeflow.org/arguments.parameters: '{"board_path":
+          "{{inputs.parameters.train-pytorch-bert-WebS3Path}}"}'}
   arguments:
     parameters: []
   serviceAccountName: pipeline-runner
