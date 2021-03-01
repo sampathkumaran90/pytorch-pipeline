@@ -40,13 +40,16 @@ else:
 
 data_prep_op = load_component_from_file(f"data_prep_step/{args.model}/component.yaml")
 train_model_op = load_component_from_file(f"training_step/{args.model}/component.yaml")
+
+model_archive_op = load_component_from_file("model_archive_step/component.yaml")
 # deploy_model_op = load_component_from_file("kfserving/component.yaml")
 list_item_op = load_component_from_url(
     "https://raw.githubusercontent.com/kubeflow/pipelines/master/components/filesystem/list_items/component.yaml"
 )
 
 # globals
-
+USER='pavel'
+PIPELINE_ROOT = 'gs://managed-pipeline-test-bugbash/20210130/pipeline_root/{}'.format(USER)
 
 @dsl.pipeline(name="pytorchcnn", output_directory="/tmp/output")
 def train_imagenet_cnn_pytorch():
@@ -76,37 +79,7 @@ def train_imagenet_cnn_pytorch():
         .set_memory_limit("14Gi")
     )
 
-    # train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"], maxepochs = 2,
-    #     numsamples = 150,
-    #     batchsize = 16,
-    #     numworkers = 2,
-    #     learningrate = 0.001,
-    #     accelerator = "")
-    #     .set_cpu_limit('4').
-    #     set_memory_limit('14Gi')
-    # )
-
-    # train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"])
-    #     .set_cpu_limit('4').
-    #     set_memory_limit('14Gi')
-    # )
-
-    # list_item_task = list_item_op(train_model_task.outputs["modelcheckpoint"])
-
-    # deploy_model_task = deploy_model_op(
-
-
-# 	action = 'create',
-# 	model_name='pytorch',
-# 	default_model_uri='gs://kfserving-samples/models/pytorch/cifar10/',
-# 	namespace='admin',
-# 	framework='pytorch',
-# 	default_custom_model_spec='{}',
-# 	canary_custom_model_spec='{}',
-# 	autoscaling_target='0',
-# 	kfserving_endpoint=''
-# )
-
+    model_archive_task = model_archive_op(model_directory = "/tmp/models/")
 
 if is_kfp:
     compiler.Compiler().compile(

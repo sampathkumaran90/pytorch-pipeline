@@ -14,6 +14,8 @@ echo ++++ Building component images with tag=$images_tag
 MODEL=resnet
 
 for COMPONENT in training_step data_prep_step
+# for COMPONENT in training_step data_prep_step model_archiver_step
+for COMPONENT in model_archive_step
 do
     cd ./$COMPONENT/$MODEL
 
