@@ -29,19 +29,13 @@ def run_pipeline(input_options):
 
     :param input_options: Input arg parameters
     """
-
+    
     dataset_tar = download_from_url(
-        URLS["AG_NEWS"], root=input_options["output"])
+        "https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz", root=input_options["output"])
     extracted_files = extract_archive(dataset_tar)
 
-    if not os.path.isfile(input_options["VOCAB_FILE"]):
-        filePointer = requests.get(
-            input_options["VOCAB_FILE_URL"], allow_redirects=True)
-        if filePointer.ok:
-            with open(input_options["VOCAB_FILE"], "wb") as f:
-                f.write(filePointer.content)
-        else:
-            raise RuntimeError("Error in fetching the vocab file")
+    bert_vocab = download_from_url(
+        input_options["VOCAB_FILE_URL"], root=input_options["output"])
 
 
 def PrintOptions(options):
@@ -70,7 +64,7 @@ def run_pipeline_component(options):
 
 # if __name__ == "__main__":
 #     run_pipeline_component({
-#         "output": "./",
+#         "output": "./data",
 #         "VOCAB_FILE": "bert_base_uncased_vocab.txt",
 #         "VOCAB_FILE_URL": "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt"
 #     })

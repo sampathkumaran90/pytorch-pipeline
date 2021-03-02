@@ -16,7 +16,7 @@ inputs:
 outputs:
   - name: output_data
     description: 'Output data location'
-    type: String
+    type: Directory
  
 implementation:
   container:
@@ -25,8 +25,8 @@ implementation:
    
     args: [
       --input_data, {inputPath: input_data},
-      --vocab_file, {inputPath: vocab_file},
-      --vocab_file_url, {inputPath: vocab_file_url},
+      --vocab_file, {inputValue: vocab_file},
+      --vocab_file_url, {inputValue: vocab_file_url},
       --output_data, {outputPath: output_data}
     ]
    

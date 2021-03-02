@@ -2,7 +2,7 @@ name: train_pytorch_cnn
 description: Train PyTorch ImageNet CNN
 
 inputs:
-    - {name: TrainingData, type: String, description: 'Path to the training data'}
+    - {name: TrainingData, type: Directory, description: 'Path to the training data'}
     - {name: MaxEpochs, type: Integer, description: 'Path to the training data'}
     - {name: NumSamples, type: Integer, description: 'Path to the training data'}
     - {name: BatchSize, type: Integer, description: 'Path to the training data'}
@@ -16,7 +16,7 @@ outputs:
 
 implementation:
     container:
-        image: jagadeeshj/training_step:16-02-2021-20-05-36.605011
+        image: jagadeeshj/training_step:17-02-2021-17-58-02.649580
         command: ["python","/component/entry_point.py"]
         args: [
             --train_glob, {inputPath: TrainingData},

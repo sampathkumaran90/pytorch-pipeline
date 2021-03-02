@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_data', type=str, help='input data path')
     parser.add_argument('--output_data',  type=str,
-                        help='output data gcs path')
+                        help='output data path')
     parser.add_argument('--vocab_file', type=str,
                         help='name of the vocab file to be saved')
     parser.add_argument('--vocab_file_url',  type=str, help='Vocab file url')
@@ -22,12 +22,8 @@ if __name__ == '__main__':
 
     print(args)
 
-    fixed_output_dir = args.output_data + "/prefix"
+    fixed_output_dir = args.output_data
     print("fixed output dir: {}".format(fixed_output_dir))
-
-    # pipeline_options = dp_package.ExtendedOptions(
-
-    # )
 
     pipeline_options = {
         "input": args.input_data,
