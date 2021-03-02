@@ -9,33 +9,46 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
-
-
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+import webdataset as wds
+from pathlib import Path
+from itertools import islice
+from sklearn.model_selection import train_test_split
 
 
 def run_pipeline(input_options):
 
-    trainset = torchvision.datasets.CIFAR10(root=input_options['output'], train=True,
-                                        download=True, transform=transform)
-    testset = torchvision.datasets.CIFAR10(root=input_options['output'], train=False,
-                                       download=True, transform=transform)
-    classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    trainset = torchvision.datasets.CIFAR10(root="./", train=True, download=True)
+    testset = torchvision.datasets.CIFAR10(root="./", train=False, download=True)
+
+    Path(input_options["output"] + "/train").mkdir(parents=True, exist_ok=True)
+    Path(input_options["output"] + "/val").mkdir(parents=True, exist_ok=True)
+    Path(input_options["output"] + "/test").mkdir(parents=True, exist_ok=True)
+
+    random_seed = 25
+    y = trainset.targets
+    trainset, valset, y_train, y_val = train_test_split(
+        trainset, y, stratify=y, shuffle=True, test_size=0.2, random_state=random_seed
+    )
+
+    for name in [(trainset, "train"), (valset, "val"), (testset, "test")]:
+        with wds.ShardWriter(
+            input_options["output"] + "/" + str(name[1]) + "/" +  str(name[1]) + "-%d.tar", maxcount=1000
+        ) as sink:
+            for index, (image, cls) in enumerate(name[0]):
+                sink.write({"__key__": "%06d" % index, "ppm": image, "cls": cls})
+
 
 def PrintOptions(options):
     for a in options.items():
         print(a)
 
+
 def run_pipeline_component(options):
     print("Running data prep job from container")
-    
+
     logging.getLogger().setLevel(logging.INFO)
-    
+
     PrintOptions(options)
 
-    run_pipeline(
-        options
-    )
+    run_pipeline(options)
+

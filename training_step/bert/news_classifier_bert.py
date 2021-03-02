@@ -12,7 +12,6 @@ import torch.nn.functional as F
 from pytorch_lightning.callbacks import (EarlyStopping, LearningRateMonitor,
                                          ModelCheckpoint)
 from pytorch_lightning.metrics import Accuracy
-from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
@@ -20,6 +19,8 @@ from torchtext.datasets.text_classification import URLS
 from torchtext.utils import download_from_url, extract_archive
 from transformers import AdamW, BertModel, BertTokenizer
 from pytorch_lightning.loggers import TensorBoardLogger
+import pyarrow.parquet as pq
+from pathlib import Path
 
 
 class NewsDataset(Dataset):
@@ -113,14 +114,12 @@ class BertDataModule(pl.LightningDataModule):
         num_samples = self.args["num_samples"]
 
         data_path = self.args['train_glob']
+    
+        df_parquet = pq.ParquetDataset(
+            self.args['train_glob']
+        )
 
-        print("\n\nDATA PATH")
-        print(self.args['train_glob'])
-        print("\n\n")
-
-        #data_path = "/tmp/outputs/output_data/data"
-
-        df = pd.read_csv(os.path.join(data_path, 'ag_news_csv/train.csv'))
+        df = df_parquet.read_pandas().to_pandas()
 
         df.columns = ["label", "title", "description"]
         df.sample(frac=1)
@@ -128,8 +127,7 @@ class BertDataModule(pl.LightningDataModule):
 
         df["label"] = df.label.apply(self.process_label)
 
-        self.tokenizer = BertTokenizer(os.path.join(
-            data_path, 'bert-base-uncased-vocab.txt'))
+        self.tokenizer = BertTokenizer.from_pretrained(self.PRE_TRAINED_MODEL_NAME)
 
         RANDOM_SEED = 42
         np.random.seed(RANDOM_SEED)
@@ -354,8 +352,12 @@ def train_model(
     early_stopping = EarlyStopping(
         monitor="val_loss", mode="min", verbose=True)
 
+    Path(tensorboard_root).mkdir(parents=True, exist_ok=True)
+
     # Tensorboard root name of the logging directory
     tboard = TensorBoardLogger(tensorboard_root, "bert_lightning_kubeflow")
+
+    Path(model_save_path).mkdir(parents=True, exist_ok=True)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=model_save_path, filename="bert_news_classification_{epoch:02d}", save_top_k=1, verbose=True, monitor="val_loss", mode="min", prefix="",
@@ -364,13 +366,10 @@ def train_model(
 
     trainer = pl.Trainer(
         logger = tboard,
+        accelerator = accelerator,
         callbacks=[
             lr_logger, early_stopping], checkpoint_callback=checkpoint_callback, max_epochs=max_epochs
     )
     trainer.fit(model, dm)
     trainer.test()
 
-
-# if __name__ == "__main__":
-#     train_model("/home/kumar/Desktop/CIFAR/code/pytorch-pipeline/data_prep_step/BERT_PYTORCH", os.getcwd(),
-#                 5, 150, 16, 3, 0.001, None, os.getcwd())

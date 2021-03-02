@@ -1,6 +1,6 @@
-FROM gcr.io/ml-pipeline/ml-pipeline-gcp:1.3.0
+FROM gcr.io/deeplearning-platform-release/pytorch-gpu:latest
 
-RUN pip install torch torchvision image pandas
+RUN pip install torchvision image pandas webdataset sklearn itertools
 
 COPY *.py /component/
 COPY data_prep/*.py /component/data_prep/

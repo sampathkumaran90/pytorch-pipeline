@@ -21,6 +21,15 @@ from torchtext.datasets.text_classification import URLS
 import sys
 import argparse
 import logging
+import pyarrow as pa
+import pyarrow.csv as pv
+import pyarrow.parquet as pq
+from pathlib import Path
+
+from torch.utils.data import IterableDataset
+from torchvision import transforms
+import webdataset as wds
+from itertools import islice
 
 
 def run_pipeline(input_options):
@@ -31,11 +40,14 @@ def run_pipeline(input_options):
     """
     
     dataset_tar = download_from_url(
-        "https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz", root=input_options["output"])
+        input_options["dataset_url"], root="./")
     extracted_files = extract_archive(dataset_tar)
 
-    bert_vocab = download_from_url(
-        input_options["VOCAB_FILE_URL"], root=input_options["output"])
+    ag_news_csv = pv.read_csv("ag_news_csv/train.csv")
+
+    Path(input_options["output"]).mkdir(parents=True, exist_ok=True)
+    pq.write_table(ag_news_csv, os.path.join(input_options["output"], "ag_news_data.parquet"))
+
 
 
 def PrintOptions(options):
@@ -60,11 +72,3 @@ def run_pipeline_component(options):
     run_pipeline(
         options
     )
-
-
-# if __name__ == "__main__":
-#     run_pipeline_component({
-#         "output": "./data",
-#         "VOCAB_FILE": "bert_base_uncased_vocab.txt",
-#         "VOCAB_FILE_URL": "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-vocab.txt"
-#     })

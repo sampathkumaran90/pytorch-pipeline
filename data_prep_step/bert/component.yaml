@@ -1,4 +1,4 @@
-name: PreProcessImageData
+name: PreProcessTextData
 description: |
   Prepare data for PyTorch training.
 
@@ -6,10 +6,7 @@ inputs:
   - name: input_data
     description: 'The path to the input dataset'
     type: String
-  - name: vocab_file
-    description: 'The path to the input vocab file'
-    type: String
-  - name: vocab_file_url
+  - name: dataset_url
     description: 'The path to the input vocab file'
     type: String
   
@@ -20,13 +17,11 @@ outputs:
  
 implementation:
   container:
-    image: jagadeeshj/data_prep_step:17-02-2021-17-58-02.649580
+    image: jagadeeshj/data_prep_step:19-02-2021-19-17-59.892404
     command: ["python","/component/entry_point.py"]
-   
     args: [
       --input_data, {inputPath: input_data},
-      --vocab_file, {inputValue: vocab_file},
-      --vocab_file_url, {inputValue: vocab_file_url},
+      --dataset_url, {inputValue: dataset_url},
       --output_data, {outputPath: output_data}
     ]
    

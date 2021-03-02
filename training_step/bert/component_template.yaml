@@ -1,5 +1,5 @@
-name: train_pytorch_cnn
-description: Train PyTorch ImageNet CNN
+name: train_pytorch_bert
+description: Train PyTorch Bert
 
 inputs:
     - {name: TrainingData, type: Directory, description: 'Path to the training data'}
@@ -11,7 +11,7 @@ inputs:
     - {name: Accelerator, type: String, description: 'Path to the training data'}
 
 outputs:
-    - {name: ModelCheckpoint, type: String, description: "Path for the resulting model checkpoint"}
+    - {name: ModelCheckpoint, type: Directory, description: "Path for the resulting model checkpoint"}
     - {name: TensorboardLogs, type: TBlogs, description: "Path for the tensorboard logs"}
 
 implementation:

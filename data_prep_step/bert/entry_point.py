@@ -14,10 +14,8 @@ if __name__ == '__main__':
     parser.add_argument('--input_data', type=str, help='input data path')
     parser.add_argument('--output_data',  type=str,
                         help='output data path')
-    parser.add_argument('--vocab_file', type=str,
-                        help='name of the vocab file to be saved')
-    parser.add_argument('--vocab_file_url',  type=str, help='Vocab file url')
-
+    parser.add_argument('--dataset_url', type=str,
+                        help='path to the dataset')
     args = parser.parse_args()
 
     print(args)
@@ -28,8 +26,7 @@ if __name__ == '__main__':
     pipeline_options = {
         "input": args.input_data,
         "output": fixed_output_dir,
-        "VOCAB_FILE": args.vocab_file,
-        "VOCAB_FILE_URL": args.vocab_file_url,
+        "dataset_url": args.dataset_url,
         "save_main_session": True
     }
 
