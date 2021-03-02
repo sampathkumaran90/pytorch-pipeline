@@ -114,7 +114,6 @@ class BertDataModule(pl.LightningDataModule):
         num_samples = self.args["num_samples"]
 
         data_path = self.args['train_glob']
-
     
         df_parquet = pq.ParquetDataset(
             self.args['train_glob']

@@ -84,6 +84,7 @@ spec:
           "None", "Gpus": "1", "LearningRate": "0.001", "MaxEpochs": "1", "TrainBatchSize":
           "None", "TrainNumWorkers": "4", "ValBatchSize": "None", "ValNumWorkers":
           "4"}'}
+
   arguments:
     parameters: []
   serviceAccountName: pipeline-runner

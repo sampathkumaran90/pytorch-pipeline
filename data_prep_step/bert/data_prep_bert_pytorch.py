@@ -49,6 +49,7 @@ def run_pipeline(input_options):
     pq.write_table(ag_news_csv, os.path.join(input_options["output"], "ag_news_data.parquet"))
 
 
+
 def PrintOptions(options):
     """
     Logging for debugging

@@ -16,7 +16,6 @@ if __name__ == '__main__':
                         help='output data path')
     parser.add_argument('--dataset_url', type=str,
                         help='path to the dataset')
-
     args = parser.parse_args()
 
     print(args)

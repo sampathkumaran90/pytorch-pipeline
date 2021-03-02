@@ -33,6 +33,10 @@ if is_kfp:
     from kfp.components import load_component_from_file, load_component_from_url
     from kfp import dsl
     from kfp import compiler
+    from kfp.components import load_component_from_file, load_component_from_url
+    from kfp.aws import use_aws_secret
+    from typing import NamedTuple
+    from kfp.components import InputPath, OutputPath, create_component_from_func
 else:
     from kfp.v2.components import load_component_from_file, load_component_from_url
     from kfp.v2 import dsl
@@ -53,33 +57,52 @@ PIPELINE_ROOT = 'gs://managed-pipeline-test-bugbash/20210130/pipeline_root/{}'.f
 
 @dsl.pipeline(name="pytorchcnn", output_directory="/tmp/output")
 def train_imagenet_cnn_pytorch():
-
-    # data_prep_task = data_prep_op(
-    #     input_data="",
-    #     dataset_url="https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz",
-    # )
-
-    data_prep_task = data_prep_op(
-        input_data=""
-    )
-
-    train_model_task = (
-        train_model_op(
-            trainingdata=data_prep_task.outputs["output_data"],
-            maxepochs=1,
-            gpus=1,
-            trainbatchsize="None",
-            valbatchsize="None",
-            trainnumworkers=4,
-            valnumworkers=4,
-            learningrate=0.001,
-            accelerator="None",
+  
+    if args.model == "bert":
+        data_prep_task = data_prep_op(
+            input_data="",
+            dataset_url="https://kubeflow-dataset.s3.us-east-2.amazonaws.com/ag_news_csv.tar.gz",
         )
-        .set_cpu_limit("4")
-        .set_memory_limit("14Gi")
-    )
 
-    model_archive_task = model_archive_op(model_directory = "/tmp/models/")
+        train_model_task = (train_model_op(trainingdata = data_prep_task.outputs["output_data"],
+            maxepochs = 2,
+            numsamples = 150,
+            batchsize = 16,
+            numworkers = 2,
+            learningrate = 0.001,
+            accelerator = "",
+            bucketname = "kubeflow-dataset",
+            foldername = "bertViz")
+            .set_cpu_limit('4').
+            set_memory_limit('14Gi')
+        ).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
+        
+        model_archive_task = model_archive_op(model_directory = "/tmp/models/")
+
+    if args.model == "resnet":
+        data_prep_task = data_prep_op(input_data="")
+
+        list_item_op_task = list_item_op(data_prep_task.outputs["output_data"])
+
+        train_model_task = (
+            train_model_op(
+                trainingdata=data_prep_task.outputs["output_data"],
+                maxepochs=1,
+                gpus=0,
+                trainbatchsize="None",
+                valbatchsize="None",
+                trainnumworkers=4,
+                valnumworkers=4,
+                learningrate=0.001,
+                accelerator="None",
+                bucketname="kubeflow-dataset",
+                foldername="Cifar10Viz",
+            )
+            .set_cpu_limit("4")
+            .set_memory_limit("14Gi")
+        ).apply(use_aws_secret('aws-secret', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'))
+
+        model_archive_task = model_archive_op(model_directory = "/tmp/models/")
 
 if is_kfp:
     compiler.Compiler().compile(

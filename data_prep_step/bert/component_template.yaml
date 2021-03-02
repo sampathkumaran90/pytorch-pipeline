@@ -16,7 +16,7 @@ inputs:
 outputs:
   - name: output_data
     description: 'Output data location'
-    type: String
+    type: Directory
  
 implementation:
   container:

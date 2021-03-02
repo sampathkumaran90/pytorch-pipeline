@@ -19,7 +19,7 @@ parser.add_argument('--num_workers', type=int, default=3,
 parser.add_argument('--learning_rate', type=float, default=0.001,
                     help="Learning rate for training")
 parser.add_argument('--accelerator', type=str, default="None", help="Acceleration")
-parser.add_argument('--model_save_path', type=str, help="Model save directory")
+parser.add_argument('--model_save_path', type=str, default="./", help="Model save directory")
 
 args = parser.parse_args()
 
