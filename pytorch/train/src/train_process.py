@@ -1,15 +1,14 @@
 import argparse
+import json
 import logging
 import os
 import shutil
-import sys
 import subprocess
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import islice
 from pathlib import Path
-
-import json
 
 import numpy as np
 import pandas as pd
@@ -29,8 +28,8 @@ from torchvision import transforms
 from tqdm import tqdm
 from transformers import AdamW, BertModel, BertTokenizer
 
-from train_process_spec import (PytorchTrainInputs,
-                                PytorchTrainOutputs, PytorchTrainSpec)
+from train_process_spec import (PytorchTrainInputs, PytorchTrainOutputs,
+                                PytorchTrainSpec)
 
 
 @ComponentMetadata(
